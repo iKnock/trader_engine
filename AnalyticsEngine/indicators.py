@@ -70,9 +70,11 @@ class Indicators:
         "function to convert ohlc data into renko bricks"
         df = DF.copy()
         #df.reset_index(inplace=True)
-        df.drop("CLOSE",axis=1,inplace=True)#Axis=1 signify Close is a column and inplace=True in this var not a copy
-        df.columns = ["date","open","high","low","close","volume"]
+       # df.drop("VOLUME",axis=1,inplace=True)#Axis=1 signify Close is a column and inplace=True in this var not a copy        
+        df.columns = ["date","open","high","low","close"]
+        print(df)
         df2 = Renko(df)
-        df2.brick_size = 3*round(self.ATR(hourly_df,120).iloc[-1],0)#iloc[-1] give the last value
+        #df2.brick_size = 3*round(self.ATR(hourly_df,120).iloc[-1],0)#iloc[-1] give the last value
+        df2.brick_size = 4
         renko_df = df2.get_ohlc_data() #if using older version of the library please use get_bricks() instead
         return renko_df

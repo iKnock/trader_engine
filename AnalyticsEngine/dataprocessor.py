@@ -57,15 +57,6 @@ def CRYPTO_SUMMERY():
     crypto_summery = data_minner.FORMAT_CRYPTO_SUMMARY_DF(summary_table_vals)
     return crypto_summery
 
-yahoo_ohlcv = GET_YAHOO_OHLCV()
-binance_btc_ohlcv = GET_BINANCE_BTC_OHLCV()
-binance_btc_order_book = GET_BINANCE_BTC_ORDER_BOOK()
-crypto_summery_crawler = CRYPTO_SUMMERY()
-
-yahoo_ohlcv_hourly = GET_YAHOO_HOURLY_OHLCV()
-
-binance_btc_5m_ohlcv = GET_BINANCE_BTC_5M_OHLCV()
-
 def CALC_APPEND_MACD(DF):
     df = DF.copy()
     macd=pd.DataFrame(indicator.MACD(df))
@@ -99,23 +90,37 @@ def CALC_APPEND_RSI(DF):
     df = df.assign(RSI=pd.Series(atr['rsi']).values)
     return df
 
-def CALC_APPEND_RENKO(DF, yahoo_ohlcv_hourly):
-    df = yahoo_ohlcv['AAPL']
-    atr=pd.DataFrame(indicator.renko_DF(binance_btc_5m_ohlcv, binance_btc_ohlcv))
-    df = df.assign(Renko=pd.Series(atr['rsi']).values)
-    return df
+def CALC_APPEND_RENKO(DF, binance_btc_ohlcv):
+    df = DF.copy()
+    rendo_data=pd.DataFrame(
+        indicator.renko_DF(df, binance_btc_ohlcv)
+        )    
+    return rendo_data
 
 
-yahoo_ohlcv = CALC_APPEND_MACD(yahoo_ohlcv)
+binance_btc_order_book = GET_BINANCE_BTC_ORDER_BOOK()
+
+yahoo_ohlcv = GET_YAHOO_OHLCV()
+yahoo_ohlcv_hourly = GET_YAHOO_HOURLY_OHLCV()
+
+
+binance_btc_ohlcv = GET_BINANCE_BTC_OHLCV()
+binance_btc_5m_ohlcv = GET_BINANCE_BTC_5M_OHLCV()
+
+crypto_summery_crawler = CRYPTO_SUMMERY()
 
 binance_btc_ohlcv = CALC_APPEND_MACD(binance_btc_ohlcv)
 binance_btc_ohlcv = CALC_APPEND_ATR(binance_btc_ohlcv)
 binance_btc_ohlcv = CALC_APPEND_BB(binance_btc_ohlcv)
-
 binance_btc_ohlcv = CALC_APPEND_ADX(binance_btc_ohlcv)
 binance_btc_ohlcv = CALC_APPEND_RSI(binance_btc_ohlcv)
 
+binance_btc_5m_ohlcv = CALC_APPEND_MACD(binance_btc_5m_ohlcv)
+binance_btc_5m_ohlcv = CALC_APPEND_ATR(binance_btc_5m_ohlcv)
+binance_btc_5m_ohlcv = CALC_APPEND_BB(binance_btc_5m_ohlcv)
+binance_btc_5m_ohlcv = CALC_APPEND_ADX(binance_btc_5m_ohlcv)
+binance_btc_5m_ohlcv = CALC_APPEND_RSI(binance_btc_5m_ohlcv)
 
-
+renko_data = CALC_APPEND_RENKO(binance_btc_5m_ohlcv,binance_btc_ohlcv)
 
 
