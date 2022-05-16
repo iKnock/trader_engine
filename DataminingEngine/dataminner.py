@@ -24,10 +24,18 @@ class DataMinner:
         """            
         '1h',limit=100
         """    
-        btc_usdt_ohlcv = exchange.fetch_ohlcv(ticker,period,limit=limit)    
+        since = exchange.milliseconds () - 86400000  # -1 day from now
+        since = 15*since
+        
+        #day = '2019-07-26 16:45:00'
+        #since = round(datetime.strptime(str(day), '%Y-%m-%d %H:%M:%S').timestamp()*1000)
+        #df = pd.DataFrame(exchange.fetch_ohlcv('ADA/USDT', '15m', since=since, limit=1000))
+        
+        
+        btc_usdt_ohlcv = exchange.fetch_ohlcv(ticker,period,since=since,limit=limit)    
         df_exchange_ohlcv = pd.DataFrame(btc_usdt_ohlcv)
         df_exchange_ohlcv.columns  = ["TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"]
-                
+        #df_exchange_ohlcv['TIMESTAMP'] = pd.to_datetime(df_exchange_ohlcv['TIMESTAMP'], unit='ms')
         return df_exchange_ohlcv
     
     def GET_ORDER_BOOK(self, exchange, ticker):

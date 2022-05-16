@@ -6,13 +6,12 @@ Created on Mon May 16 12:55:16 2022
 """
 
 import ccxt
+import pandas as pd
 from dataminner import DataMinner
 from indicators import Indicators
-import pandas as pd
 
 data_minner = DataMinner()
 indicator = Indicators()
-
   
 def GET_YAHOO_HOURLY_OHLCV():
     tickers = ["MSFT","AAPL","GOOG"]
@@ -28,24 +27,6 @@ def GET_YAHOO_OHLCV():
         yfinance_ohlcv[ticker] = data_minner.GET_YAHOO_OHLCV(ticker, '1mon','15m')
     return yfinance_ohlcv
 
-def GET_BINANCE_BTC_OHLCV():
-    ticker = "BTC/USDT"
-    binance = ccxt.binance({'verbose': True})
-    binance_btc_ohlcv = data_minner.GET_BINANCE_OHLCV(ticker, binance,'1h',200)
-    return binance_btc_ohlcv
-
-def GET_BINANCE_BTC_5M_OHLCV():
-    ticker = "BTC/USDT"
-    binance = ccxt.binance({'verbose': True})
-    binance_btc_ohlcv = data_minner.GET_BINANCE_OHLCV(ticker, binance,'5m',200)
-    return binance_btc_ohlcv
-
-
-def GET_BINANCE_BTC_ORDER_BOOK():
-    ticker = "BTC/USDT"
-    binance = ccxt.binance({'verbose': True})
-    binance_btc_order_book = data_minner.GET_ORDER_BOOK(binance, ticker)
-    return binance_btc_order_book
 
 def CRYPTO_SUMMERY():
     num_of_crypto = 200
@@ -98,16 +79,36 @@ def CALC_APPEND_RENKO(DF, binance_btc_ohlcv):
     return rendo_data
 
 
-binance_btc_order_book = GET_BINANCE_BTC_ORDER_BOOK()
+
+binance_btc_order_book = data_minner.GET_ORDER_BOOK(
+    ccxt.binance({'verbose': True}), 
+    "BTC/USDT")
 
 yahoo_ohlcv = GET_YAHOO_OHLCV()
 yahoo_ohlcv_hourly = GET_YAHOO_HOURLY_OHLCV()
 
-
-binance_btc_ohlcv = GET_BINANCE_BTC_OHLCV()
-binance_btc_5m_ohlcv = GET_BINANCE_BTC_5M_OHLCV()
-
 crypto_summery_crawler = CRYPTO_SUMMERY()
+
+#♦===========
+
+
+binance_btc_5m_ohlcv = data_minner.GET_BINANCE_OHLCV(
+    "BTC/USDT", 
+    ccxt.binance({'verbose': True}),
+    '5m',
+    1000)
+
+binance_btc_5m_ohlcv['TIMESTAMP'] = pd.to_datetime(binance_btc_5m_ohlcv['TIMESTAMP'], unit='ms')
+binance_btc_5m_ohlcv.iloc[::-1]
+binance_btc_5m_ohlcvbinance_btc_5m_ohlcv.sort_values(by='TIMESTAMP').T
+
+binance_btc_one_hour_ohlcv = data_minner.GET_BINANCE_OHLCV(
+    "BTC/USDT", 
+    ccxt.binance({'verbose': True}),
+    '1h',
+    1000)
+binance_btc_one_hour_ohlcv['TIMESTAMP'] = pd.to_datetime(binance_btc_one_hour_ohlcv['TIMESTAMP'], unit='ms')
+binance_btc_one_hour_ohlcv.sort_values(by='TIMESTAMP')
 
 binance_btc_ohlcv = CALC_APPEND_MACD(binance_btc_ohlcv)
 binance_btc_ohlcv = CALC_APPEND_ATR(binance_btc_ohlcv)
