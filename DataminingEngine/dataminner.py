@@ -15,7 +15,8 @@ class DataMinner:
     def GET_YAHOO_OHLCV(self, ticker, yperiod, interval):         
         ohlcv_data = {}        
         temp = yf.download(ticker, period=yperiod, interval=interval)
-        temp.dropna(how="any", inplace=True)
+        #temp.dropna(how="any", inplace=True)
+        temp.dropna(axis=0,how='any',inplace=True)#inplace true makes it substract from the data frame
         ohlcv_data[ticker] = temp
         return ohlcv_data    
 
