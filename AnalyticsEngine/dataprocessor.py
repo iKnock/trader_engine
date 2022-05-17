@@ -9,9 +9,12 @@ import ccxt
 import pandas as pd
 from dataminner import DataMinner
 from indicators import Indicators
+from strategy_performance_index import StrategyPerformanceIndex
+import matplotlib.pyplot as plt
 
 data_minner = DataMinner()
 indicator = Indicators()
+strategyPerfIndex = StrategyPerformanceIndex()
   
 def GET_YAHOO_HOURLY_OHLCV():
     tickers = ["MSFT","AAPL","GOOG"]
@@ -89,8 +92,11 @@ yahoo_ohlcv_hourly = GET_YAHOO_HOURLY_OHLCV()
 
 crypto_summery_crawler = CRYPTO_SUMMERY()
 
-#♦===========
-
+#==============================================================================
+#==============================================================================
+#========================5 Min btc data with indicators=======================
+#==============================================================================
+#==============================================================================
 
 binance_btc_5m_ohlcv = data_minner.GET_BINANCE_OHLCV(
     "BTC/USDT", 
@@ -103,6 +109,20 @@ binance_btc_5m_ohlcv = binance_btc_5m_ohlcv.iloc[::-1]
 binance_btc_5m_ohlcv.reset_index(inplace=True)
 binance_btc_5m_ohlcv.drop("index",axis=1,inplace=True)
 
+binance_btc_5m_ohlcv = CALC_APPEND_MACD(binance_btc_5m_ohlcv)
+binance_btc_5m_ohlcv = CALC_APPEND_ATR(binance_btc_5m_ohlcv)
+binance_btc_5m_ohlcv = CALC_APPEND_BB(binance_btc_5m_ohlcv)
+binance_btc_5m_ohlcv = CALC_APPEND_ADX(binance_btc_5m_ohlcv)
+binance_btc_5m_ohlcv = CALC_APPEND_RSI(binance_btc_5m_ohlcv)
+
+binance_btc_5m_ohlcv["five_min_ret"] = binance_btc_5m_ohlcv["CLOSE"].pct_change()
+
+#==============================================================================
+#==============================================================================
+#========================1 hour btc data with indicators=======================
+#==============================================================================
+#==============================================================================
+
 binance_btc_one_hour_ohlcv = data_minner.GET_BINANCE_OHLCV(
     "BTC/USDT", 
     ccxt.binance({'verbose': True}),
@@ -110,9 +130,9 @@ binance_btc_one_hour_ohlcv = data_minner.GET_BINANCE_OHLCV(
     1000)
 
 binance_btc_one_hour_ohlcv['TIMESTAMP'] = pd.to_datetime(binance_btc_one_hour_ohlcv['TIMESTAMP'], unit='ms')
-binance_btc_one_hour_ohlcv = binance_btc_one_hour_ohlcv.iloc[::-1]
+binance_btc_one_hour_ohlcv = binance_btc_one_hour_ohlcv.iloc[::-1]#reverse the df
 binance_btc_one_hour_ohlcv.reset_index(inplace=True)
-binance_btc_one_hour_ohlcv.drop("index",axis=1,inplace=True)
+binance_btc_one_hour_ohlcv.drop("index",axis=1,inplace=True)#drop the old index
 
 
 binance_btc_one_hour_ohlcv = CALC_APPEND_MACD(binance_btc_one_hour_ohlcv)
@@ -121,18 +141,66 @@ binance_btc_one_hour_ohlcv = CALC_APPEND_BB(binance_btc_one_hour_ohlcv)
 binance_btc_one_hour_ohlcv = CALC_APPEND_ADX(binance_btc_one_hour_ohlcv)
 binance_btc_one_hour_ohlcv = CALC_APPEND_RSI(binance_btc_one_hour_ohlcv)
 
-binance_btc_5m_ohlcv = CALC_APPEND_MACD(binance_btc_5m_ohlcv)
-binance_btc_5m_ohlcv = CALC_APPEND_ATR(binance_btc_5m_ohlcv)
-binance_btc_5m_ohlcv = CALC_APPEND_BB(binance_btc_5m_ohlcv)
-binance_btc_5m_ohlcv = CALC_APPEND_ADX(binance_btc_5m_ohlcv)
-binance_btc_5m_ohlcv = CALC_APPEND_RSI(binance_btc_5m_ohlcv)
+binance_btc_one_hour_ohlcv["one_hour_ret"] = binance_btc_one_hour_ohlcv["CLOSE"].pct_change()
 
+#visualization
+fig, ax = plt.subplots()
+plt.plot(binance_btc_one_hour_ohlcv["one_hour_ret"])
+plt.title("BTC/USD hourly return")
+plt.ylabel("cumulative return")
+plt.xlabel("months")
+ax.legend(["BTC/USD hourly return","Index Return"])
+#==============================================================================
+#==============================================================================
+#========================1 month btc data with indicators=======================
+#==============================================================================
+#==============================================================================
 
+binance_btc_one_month_ohlcv = data_minner.GET_BINANCE_OHLCV(
+    "BTC/USDT", 
+    ccxt.binance({'verbose': True}),
+    '1M',
+    1000)
+
+binance_btc_one_month_ohlcv["one_mon_ret"] = binance_btc_one_month_ohlcv["CLOSE"].pct_change()
+binance_btc_one_month_ohlcv['TIMESTAMP'] = pd.to_datetime(binance_btc_one_month_ohlcv['TIMESTAMP'], unit='ms')
+
+#visualization
+fig, ax = plt.subplots()
+plt.plot(binance_btc_one_month_ohlcv["one_mon_ret"])
+plt.plot(binance_btc_one_hour_ohlcv["one_hour_ret"])
+plt.plot(binance_btc_5m_ohlcv["five_min_ret"])
+plt.title("BTC/USD monthly return")
+plt.ylabel("cumulative return")
+plt.xlabel("months")
+ax.legend(["BTC/USD monthly return","one hour Return","five min"])
+#==============================================================================
+#=============================Rendko data======================================
+#==============================================================================
 renko_data = CALC_APPEND_RENKO(binance_btc_5m_ohlcv.iloc[:,[0,1,2,3,4]],binance_btc_one_hour_ohlcv)
 
-renko_data['open'] = renko_data['open'].astype('float')
-renko_data['high'] = renko_data['high'].astype('float')
-renko_data['low'] = renko_data['low'].astype('float')
-renko_data['close'] = renko_data['close'].astype('float')
-renko_data['uptrend'] = renko_data['uptrend'].astype('float')
+def convertRenkoToNumeric():
+    renko_data['open'] = renko_data['open'].astype('float')
+    renko_data['high'] = renko_data['high'].astype('float')
+    renko_data['low'] = renko_data['low'].astype('float')
+    renko_data['close'] = renko_data['close'].astype('float')
+    renko_data['uptrend'] = renko_data['uptrend'].astype('float')
+    return renko_data
+#==============================================================================
+#==============================================================================
+#==============================================================================
+daily_return = binance_btc_5m_ohlcv.iloc[:,[1,2,3,4]].pct_change()
+binance_btc_5m_ohlcv.set_index('TIMESTAMP')
+daily_return = binance_btc_5m_ohlcv/binance_btc_5m_ohlcv.shift(1) - 1 #Performs same operation as above
 
+#==============================================================================
+#===============Strategy Performance KPI=======================================
+#==============================================================================
+strategyPerfIndex.CAGR(binance_btc_5m_ohlcv)
+strategyPerfIndex.volatility(binance_btc_5m_ohlcv)
+strategyPerfIndex.sharpe(binance_btc_5m_ohlcv,0.03)
+strategyPerfIndex.sortino(binance_btc_5m_ohlcv,0.03)
+
+print("Sharpe = {}".format(strategyPerfIndex.sharpe(binance_btc_5m_ohlcv,0.03)))
+print("Sortino = {}".format(strategyPerfIndex.sortino(binance_btc_5m_ohlcv,0.03)))
+    
