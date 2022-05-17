@@ -13,6 +13,7 @@ from strategy_performance_index import StrategyPerformanceIndex
 from portofolio_rebalancing import Backtesting
 import matplotlib.pyplot as plt
 import datetime as dt
+import numpy as np
 
 
 data_minner = DataMinner()
@@ -88,8 +89,10 @@ def CALC_APPEND_RENKO(DF, binance_btc_ohlcv):
         )    
     return rendo_data
 
-
-
+#==============================================================================
+#==============================================================================
+#==============================================================================
+#==============================================================================
 binance_btc_order_book = data_minner.GET_ORDER_BOOK(
     ccxt.binance({'verbose': True}), 
     "BTC/USDT")
@@ -122,12 +125,61 @@ binance_btc_5m_ohlcv = CALC_APPEND_BB(binance_btc_5m_ohlcv)
 binance_btc_5m_ohlcv = CALC_APPEND_ADX(binance_btc_5m_ohlcv)
 binance_btc_5m_ohlcv = CALC_APPEND_RSI(binance_btc_5m_ohlcv)
 
+binance_btc_5m_ohlcv["roll_max_cp"] = binance_btc_5m_ohlcv["HIGH"].rolling(20).max()
+binance_btc_5m_ohlcv["roll_min_cp"] = binance_btc_5m_ohlcv["LOW"].rolling(20).min()
+binance_btc_5m_ohlcv["roll_max_vol"] = binance_btc_5m_ohlcv["VOLUME"].rolling(20).max()
+
 binance_btc_5m_ohlcv['five_minute_ret'] = strategyPerfIndex.RETURN_FOR_PERIOD(
     binance_btc_5m_ohlcv,"five_minute")
 
 binance_btc_5m_ohlcv['CAGR']=strategyPerfIndex.CAGR(binance_btc_5m_ohlcv)
 binance_btc_5m_ohlcv['sharpe']=strategyPerfIndex.sharpe(binance_btc_5m_ohlcv,0.03)
 binance_btc_5m_ohlcv['sortino']=strategyPerfIndex.sortino(binance_btc_5m_ohlcv,0.03)
+
+binance_btc_5m_ohlcv = breakout(binance_btc_5m_ohlcv)
+
+def breakout(DF):
+    tickers_signal = {}
+    tickers_ret = {}
+    ohlc_dict = binance_btc_5m_ohlcv.copy()
+    print("calculating returns ")
+    for i in range(1,len(ohlc_dict)):
+        if tickers_signal == "":
+            tickers_ret.append(0)
+            if ohlc_dict["HIGH"][i]>=ohlc_dict["roll_max_cp"][i] and \
+               ohlc_dict["VOLUME"][i]>1.5*ohlc_dict["roll_max_vol"][i-1]:
+                tickers_signal = "Buy"
+            elif ohlc_dict["LOW"][i]<=ohlc_dict["roll_min_cp"][i] and \
+               ohlc_dict["VOLUME"][i]>1.5*ohlc_dict["roll_max_vol"][i-1]:
+                tickers_signal = "Sell"
+        
+        elif tickers_signal == "Buy":
+            if ohlc_dict["LOW"][i]<ohlc_dict["CLOSE"][i-1] - ohlc_dict["ATR"][i-1]:
+                tickers_signal = ""
+                tickers_ret.append(((ohlc_dict["CLOSE"][i-1] - ohlc_dict["ATR"][i-1])/ohlc_dict["Close"][i-1])-1)
+            elif ohlc_dict["LOW"][i]<=ohlc_dict["roll_min_cp"][i] and \
+               ohlc_dict["VOLUME"][i]>1.5*ohlc_dict["roll_max_vol"][i-1]:
+                tickers_signal = "Sell"
+                tickers_ret.append((ohlc_dict["CLOSE"][i]/ohlc_dict["CLOSE"][i-1])-1)
+            else:
+                tickers_ret.append((ohlc_dict["CLOSE"][i]/ohlc_dict["CLOSE"][i-1])-1)
+                
+        elif tickers_signal == "Sell":
+            if ohlc_dict["HIGH"][i]>ohlc_dict["CLOSE"][i-1] + ohlc_dict["ATR"][i-1]:
+                tickers_signal = ""
+                tickers_ret.append((ohlc_dict["CLOSE"][i-1]/(ohlc_dict["CLOSE"][i-1] + ohlc_dict["ATR"][i-1]))-1)
+            elif ohlc_dict["HIGH"][i]>=ohlc_dict["roll_max_cp"][i] and \
+               ohlc_dict["VOLUME"][i]>1.5*ohlc_dict["roll_max_vol"][i-1]:
+                tickers_signal = "Buy"
+                tickers_ret.append((ohlc_dict["CLOSE"][i-1]/ohlc_dict["CLOSE"][i])-1)
+            else:
+                tickers_ret.append((ohlc_dict["CLOSE"][i-1]/ohlc_dict["CLOSE"][i])-1)
+                
+    ohlc_dict["ret"] = np.array(tickers_ret)
+    return ohlc_dict
+
+
+
 
 #===Strategy Performance KPI==
 strategyPerfIndex.volatility(binance_btc_5m_ohlcv)
@@ -257,24 +309,3 @@ ax.legend(["BTC/USD monthly return","one hour Return","five min"])
 #==============================================================================
 #==============================================================================
 #calculating overall strategy's KPIs
-strategyPerfIndex.CAGR(
-    portofoRebala.pflio(
-        strategyPerfIndex.RETURN_FOR_PERIOD(binance_btc_one_month_ohlcv,"monthly"),6,3,"montly"
-        ))
-strategyPerfIndex.sharpe(
-    portofoRebala.pflio(
-        strategyPerfIndex.RETURN_FOR_PERIOD(binance_btc_one_month_ohlcv,'monthly'),6,3),0.025),
-
-strategyPerfIndex.max_dd(
-    portofoRebala.pflio(
-        strategyPerfIndex.RETURN_FOR_PERIOD(strategyPerfIndex.RETURN_FOR_PERIOD(binance_btc_one_month_ohlcv,'monthly'),6,3)),'monthly') 
-
-
-#visualization
-fig, ax = plt.subplots()
-plt.plot((1+pflio(return_df,6,3)).cumprod())
-plt.title("Index Return vs Strategy Return")
-plt.ylabel("cumulative return")
-plt.xlabel("months")
-ax.legend(["Strategy Return","Index Return"])
-
