@@ -32,7 +32,9 @@ class DataMinner:
         #df = pd.DataFrame(exchange.fetch_ohlcv('ADA/USDT', '15m', since=since, limit=1000))
         
         
-        btc_usdt_ohlcv = exchange.fetch_ohlcv(ticker,period,since=since,limit=limit)    
+        #btc_usdt_ohlcv = exchange.fetch_ohlcv(ticker,period,since=since,limit=limit)    
+        btc_usdt_ohlcv = exchange.fetch_ohlcv(ticker,period,limit=limit)    
+        print(btc_usdt_ohlcv)
         df_exchange_ohlcv = pd.DataFrame(btc_usdt_ohlcv)
         df_exchange_ohlcv.columns  = ["TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"]
         #df_exchange_ohlcv['TIMESTAMP'] = pd.to_datetime(df_exchange_ohlcv['TIMESTAMP'], unit='ms')

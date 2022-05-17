@@ -96,25 +96,30 @@ binance_btc_5m_ohlcv = data_minner.GET_BINANCE_OHLCV(
     "BTC/USDT", 
     ccxt.binance({'verbose': True}),
     '5m',
-    1000)
+    200)
 
 binance_btc_5m_ohlcv['TIMESTAMP'] = pd.to_datetime(binance_btc_5m_ohlcv['TIMESTAMP'], unit='ms')
-binance_btc_5m_ohlcv.iloc[::-1]
-binance_btc_5m_ohlcvbinance_btc_5m_ohlcv.sort_values(by='TIMESTAMP').T
+binance_btc_5m_ohlcv = binance_btc_5m_ohlcv.iloc[::-1]
+binance_btc_5m_ohlcv.reset_index(inplace=True)
+binance_btc_5m_ohlcv.drop("index",axis=1,inplace=True)
 
 binance_btc_one_hour_ohlcv = data_minner.GET_BINANCE_OHLCV(
     "BTC/USDT", 
     ccxt.binance({'verbose': True}),
     '1h',
     1000)
-binance_btc_one_hour_ohlcv['TIMESTAMP'] = pd.to_datetime(binance_btc_one_hour_ohlcv['TIMESTAMP'], unit='ms')
-binance_btc_one_hour_ohlcv.sort_values(by='TIMESTAMP')
 
-binance_btc_ohlcv = CALC_APPEND_MACD(binance_btc_ohlcv)
-binance_btc_ohlcv = CALC_APPEND_ATR(binance_btc_ohlcv)
-binance_btc_ohlcv = CALC_APPEND_BB(binance_btc_ohlcv)
-binance_btc_ohlcv = CALC_APPEND_ADX(binance_btc_ohlcv)
-binance_btc_ohlcv = CALC_APPEND_RSI(binance_btc_ohlcv)
+binance_btc_one_hour_ohlcv['TIMESTAMP'] = pd.to_datetime(binance_btc_one_hour_ohlcv['TIMESTAMP'], unit='ms')
+binance_btc_one_hour_ohlcv = binance_btc_one_hour_ohlcv.iloc[::-1]
+binance_btc_one_hour_ohlcv.reset_index(inplace=True)
+binance_btc_one_hour_ohlcv.drop("index",axis=1,inplace=True)
+
+
+binance_btc_one_hour_ohlcv = CALC_APPEND_MACD(binance_btc_one_hour_ohlcv)
+binance_btc_one_hour_ohlcv = CALC_APPEND_ATR(binance_btc_one_hour_ohlcv)
+binance_btc_one_hour_ohlcv = CALC_APPEND_BB(binance_btc_one_hour_ohlcv)
+binance_btc_one_hour_ohlcv = CALC_APPEND_ADX(binance_btc_one_hour_ohlcv)
+binance_btc_one_hour_ohlcv = CALC_APPEND_RSI(binance_btc_one_hour_ohlcv)
 
 binance_btc_5m_ohlcv = CALC_APPEND_MACD(binance_btc_5m_ohlcv)
 binance_btc_5m_ohlcv = CALC_APPEND_ATR(binance_btc_5m_ohlcv)
@@ -122,6 +127,12 @@ binance_btc_5m_ohlcv = CALC_APPEND_BB(binance_btc_5m_ohlcv)
 binance_btc_5m_ohlcv = CALC_APPEND_ADX(binance_btc_5m_ohlcv)
 binance_btc_5m_ohlcv = CALC_APPEND_RSI(binance_btc_5m_ohlcv)
 
-renko_data = CALC_APPEND_RENKO(binance_btc_5m_ohlcv,binance_btc_ohlcv)
 
+renko_data = CALC_APPEND_RENKO(binance_btc_5m_ohlcv.iloc[:,[0,1,2,3,4]],binance_btc_one_hour_ohlcv)
+
+renko_data['open'] = renko_data['open'].astype('float')
+renko_data['high'] = renko_data['high'].astype('float')
+renko_data['low'] = renko_data['low'].astype('float')
+renko_data['close'] = renko_data['close'].astype('float')
+renko_data['uptrend'] = renko_data['uptrend'].astype('float')
 
