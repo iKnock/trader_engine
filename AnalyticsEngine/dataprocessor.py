@@ -10,12 +10,19 @@ import pandas as pd
 from dataminner import DataMinner
 from indicators import Indicators
 from strategy_performance_index import StrategyPerformanceIndex
+from portofolio_rebalancing import Backtesting
 import matplotlib.pyplot as plt
+import datetime as dt
+
 
 data_minner = DataMinner()
 indicator = Indicators()
 strategyPerfIndex = StrategyPerformanceIndex()
-  
+portofoRebala = Backtesting()  
+
+start = dt.datetime.today()-dt.timedelta(3650)
+end = dt.datetime.today()
+
 def GET_YAHOO_HOURLY_OHLCV():
     tickers = ["MSFT","AAPL","GOOG"]
     yfinance_ohlcv={}
@@ -115,8 +122,29 @@ binance_btc_5m_ohlcv = CALC_APPEND_BB(binance_btc_5m_ohlcv)
 binance_btc_5m_ohlcv = CALC_APPEND_ADX(binance_btc_5m_ohlcv)
 binance_btc_5m_ohlcv = CALC_APPEND_RSI(binance_btc_5m_ohlcv)
 
-binance_btc_5m_ohlcv["five_min_ret"] = binance_btc_5m_ohlcv["CLOSE"].pct_change()
+binance_btc_5m_ohlcv['five_minute_ret'] = strategyPerfIndex.RETURN_FOR_PERIOD(
+    binance_btc_5m_ohlcv,"five_minute")
 
+binance_btc_5m_ohlcv['CAGR']=strategyPerfIndex.CAGR(binance_btc_5m_ohlcv)
+binance_btc_5m_ohlcv['sharpe']=strategyPerfIndex.sharpe(binance_btc_5m_ohlcv,0.03)
+binance_btc_5m_ohlcv['sortino']=strategyPerfIndex.sortino(binance_btc_5m_ohlcv,0.03)
+
+#===Strategy Performance KPI==
+strategyPerfIndex.volatility(binance_btc_5m_ohlcv)
+strategyPerfIndex.max_dd(binance_btc_5m_ohlcv,"five_minute_ret")
+print("Sharpe = {}".format(strategyPerfIndex.sharpe(binance_btc_5m_ohlcv,0.03)))
+print("Sortino = {}".format(strategyPerfIndex.sortino(binance_btc_5m_ohlcv,0.03)))
+
+#visualization
+fig, ax = plt.subplots()
+plt.plot(binance_btc_5m_ohlcv["five_minute_ret"])
+plt.plot(binance_btc_5m_ohlcv["CAGR"])
+plt.plot(binance_btc_5m_ohlcv["sharpe"])
+plt.plot(binance_btc_5m_ohlcv["sortino"])
+plt.title("BTC/USD hourly return")
+plt.ylabel("cumulative return")
+plt.xlabel("5Min")
+ax.legend(["BTC/USD 5min_ret","CAGR", "sharpe", "sortino"])
 #==============================================================================
 #==============================================================================
 #========================1 hour btc data with indicators=======================
@@ -141,11 +169,23 @@ binance_btc_one_hour_ohlcv = CALC_APPEND_BB(binance_btc_one_hour_ohlcv)
 binance_btc_one_hour_ohlcv = CALC_APPEND_ADX(binance_btc_one_hour_ohlcv)
 binance_btc_one_hour_ohlcv = CALC_APPEND_RSI(binance_btc_one_hour_ohlcv)
 
-binance_btc_one_hour_ohlcv["one_hour_ret"] = binance_btc_one_hour_ohlcv["CLOSE"].pct_change()
+binance_btc_one_hour_ohlcv['hourly_ret'] = strategyPerfIndex.RETURN_FOR_PERIOD(
+    binance_btc_one_hour_ohlcv,"hourly")
+
+binance_btc_one_hour_ohlcv['CAGR']=strategyPerfIndex.CAGR(binance_btc_one_hour_ohlcv)
+binance_btc_one_hour_ohlcv['sharpe']=strategyPerfIndex.sharpe(binance_btc_one_hour_ohlcv,0.03)
+binance_btc_one_hour_ohlcv['sortino']=strategyPerfIndex.sortino(binance_btc_one_hour_ohlcv,0.03)
+
+#===============Strategy Performance KPI====================
+strategyPerfIndex.volatility(binance_btc_one_hour_ohlcv)
+strategyPerfIndex.max_dd(binance_btc_one_hour_ohlcv,"hourly_ret")
+print("Sharpe = {}".format(strategyPerfIndex.sharpe(binance_btc_one_hour_ohlcv,0.03)))
+print("Sortino = {}".format(strategyPerfIndex.sortino(binance_btc_one_hour_ohlcv,0.03)))
+
 
 #visualization
 fig, ax = plt.subplots()
-plt.plot(binance_btc_one_hour_ohlcv["one_hour_ret"])
+plt.plot(binance_btc_one_hour_ohlcv["hourly_ret"])
 plt.title("BTC/USD hourly return")
 plt.ylabel("cumulative return")
 plt.xlabel("months")
@@ -160,16 +200,35 @@ binance_btc_one_month_ohlcv = data_minner.GET_BINANCE_OHLCV(
     "BTC/USDT", 
     ccxt.binance({'verbose': True}),
     '1M',
-    1000)
+    7000)
 
-binance_btc_one_month_ohlcv["one_mon_ret"] = binance_btc_one_month_ohlcv["CLOSE"].pct_change()
 binance_btc_one_month_ohlcv['TIMESTAMP'] = pd.to_datetime(binance_btc_one_month_ohlcv['TIMESTAMP'], unit='ms')
+binance_btc_one_month_ohlcv = binance_btc_one_month_ohlcv.iloc[::-1]
+binance_btc_one_month_ohlcv.reset_index(inplace=True)
+binance_btc_one_month_ohlcv.drop("index",axis=1,inplace=True)
+
+binance_btc_one_month_ohlcv = CALC_APPEND_MACD(binance_btc_one_month_ohlcv)
+binance_btc_one_month_ohlcv = CALC_APPEND_ATR(binance_btc_one_month_ohlcv)
+binance_btc_one_month_ohlcv = CALC_APPEND_BB(binance_btc_one_month_ohlcv)
+binance_btc_one_month_ohlcv = CALC_APPEND_ADX(binance_btc_one_month_ohlcv)
+binance_btc_one_month_ohlcv = CALC_APPEND_RSI(binance_btc_one_month_ohlcv)
+
+binance_btc_one_month_ohlcv["monthly_ret"] = strategyPerfIndex.RETURN_FOR_PERIOD(
+    binance_btc_one_month_ohlcv,"monthly")
+
+binance_btc_one_month_ohlcv['CAGR']=strategyPerfIndex.CAGR(binance_btc_one_month_ohlcv)
+binance_btc_one_month_ohlcv['sharpe']=strategyPerfIndex.sharpe(binance_btc_one_month_ohlcv,0.03)
+binance_btc_one_month_ohlcv['sortino']=strategyPerfIndex.sortino(binance_btc_one_month_ohlcv,0.03)
+
+#===============Strategy Performance KPI====================
+strategyPerfIndex.volatility(binance_btc_one_month_ohlcv)
+strategyPerfIndex.max_dd(binance_btc_one_month_ohlcv,"monthly_ret")
+print("Sharpe = {}".format(strategyPerfIndex.sharpe(binance_btc_one_month_ohlcv,0.03)))
+print("Sortino = {}".format(strategyPerfIndex.sortino(binance_btc_one_month_ohlcv,0.03)))
 
 #visualization
 fig, ax = plt.subplots()
-plt.plot(binance_btc_one_month_ohlcv["one_mon_ret"])
-plt.plot(binance_btc_one_hour_ohlcv["one_hour_ret"])
-plt.plot(binance_btc_5m_ohlcv["five_min_ret"])
+plt.plot(binance_btc_one_month_ohlcv["monthly_ret"])
 plt.title("BTC/USD monthly return")
 plt.ylabel("cumulative return")
 plt.xlabel("months")
@@ -186,21 +245,36 @@ def convertRenkoToNumeric():
     renko_data['close'] = renko_data['close'].astype('float')
     renko_data['uptrend'] = renko_data['uptrend'].astype('float')
     return renko_data
-#==============================================================================
-#==============================================================================
-#==============================================================================
-daily_return = binance_btc_5m_ohlcv.iloc[:,[1,2,3,4]].pct_change()
-binance_btc_5m_ohlcv.set_index('TIMESTAMP')
-daily_return = binance_btc_5m_ohlcv/binance_btc_5m_ohlcv.shift(1) - 1 #Performs same operation as above
 
+#visualization
+fig, ax = plt.subplots()
+plt.plot(renko_data["close"])
+plt.title("BTC/USD monthly return")
+plt.ylabel("cumulative return")
+plt.xlabel("months")
+ax.legend(["BTC/USD monthly return","one hour Return","five min"])
 #==============================================================================
-#===============Strategy Performance KPI=======================================
 #==============================================================================
-strategyPerfIndex.CAGR(binance_btc_5m_ohlcv)
-strategyPerfIndex.volatility(binance_btc_5m_ohlcv)
-strategyPerfIndex.sharpe(binance_btc_5m_ohlcv,0.03)
-strategyPerfIndex.sortino(binance_btc_5m_ohlcv,0.03)
+#==============================================================================
+#calculating overall strategy's KPIs
+strategyPerfIndex.CAGR(
+    portofoRebala.pflio(
+        strategyPerfIndex.RETURN_FOR_PERIOD(binance_btc_one_month_ohlcv,"monthly"),6,3,"montly"
+        ))
+strategyPerfIndex.sharpe(
+    portofoRebala.pflio(
+        strategyPerfIndex.RETURN_FOR_PERIOD(binance_btc_one_month_ohlcv,'monthly'),6,3),0.025),
 
-print("Sharpe = {}".format(strategyPerfIndex.sharpe(binance_btc_5m_ohlcv,0.03)))
-print("Sortino = {}".format(strategyPerfIndex.sortino(binance_btc_5m_ohlcv,0.03)))
-    
+strategyPerfIndex.max_dd(
+    portofoRebala.pflio(
+        strategyPerfIndex.RETURN_FOR_PERIOD(strategyPerfIndex.RETURN_FOR_PERIOD(binance_btc_one_month_ohlcv,'monthly'),6,3)),'monthly') 
+
+
+#visualization
+fig, ax = plt.subplots()
+plt.plot((1+pflio(return_df,6,3)).cumprod())
+plt.title("Index Return vs Strategy Return")
+plt.ylabel("cumulative return")
+plt.xlabel("months")
+ax.legend(["Strategy Return","Index Return"])
+

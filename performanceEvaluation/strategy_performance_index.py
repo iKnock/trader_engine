@@ -6,6 +6,7 @@ Created on Tue May 17 16:43:09 2022
 """
 import numpy as np
 import pandas as pd
+import copy
 
 class StrategyPerformanceIndex:
     
@@ -37,3 +38,23 @@ class StrategyPerformanceIndex:
         neg_return = np.where(df["return"]>0,0,df["return"])
         neg_vol = pd.Series(neg_return[neg_return!=0]).std() * np.sqrt(252)
         return (self.CAGR(df) - rf)/neg_vol
+    
+    def max_dd(self, DF, return_key):
+        "function to calculate max drawdown"
+        df = DF.copy()
+        df["cum_return"] = (1 + df[return_key]).cumprod()
+        df["cum_roll_max"] = df["cum_return"].cummax()
+        df["drawdown"] = df["cum_roll_max"] - df["cum_return"]
+        df["drawdown_pct"] = df["drawdown"]/df["cum_roll_max"]
+        max_dd = df["drawdown_pct"].max()
+        return max_dd
+    
+    def RETURN_FOR_PERIOD(self, DF, period):
+    # calculating monthly return for each stock and consolidating return info by stock in a separate dataframe
+        ohlc_dict = copy.deepcopy(DF)
+        return_df = pd.DataFrame()    
+        print("calculating "+period+" return")
+        ohlc_dict[period+"_ret"] = ohlc_dict["CLOSE"].pct_change()
+        return_df = ohlc_dict[period+"_ret"]
+        return_df.dropna(inplace=True)
+        return return_df
