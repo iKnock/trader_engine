@@ -6,18 +6,27 @@ Created on Mon May 16 12:55:16 2022
 """
 
 import ccxt
+
+import asyncio
+#import ccxt.async_support as ccxt
+#async def print_poloniex_ethbtc_ticker():
+#    poloniex = ccxt.poloniex()
+#    print(await poloniex.fetch_ticker('ETH/BTC'))
+
 import pandas as pd
-from dataminner import DataMinner
-from indicators import Indicators
+from dataminner import *
+
+from indicators import *
 from strategy_performance_index import StrategyPerformanceIndex
 from portofolio_rebalancing import Backtesting
 import matplotlib.pyplot as plt
 import datetime as dt
 import numpy as np
+from breakout import *
+
+from asciichart import *
 
 
-data_minner = DataMinner()
-indicator = Indicators()
 strategyPerfIndex = StrategyPerformanceIndex()
 portofoRebala = Backtesting()  
 
@@ -28,14 +37,14 @@ def GET_YAHOO_HOURLY_OHLCV():
     tickers = ["MSFT","AAPL","GOOG"]
     yfinance_ohlcv={}
     for ticker in tickers:
-        yfinance_ohlcv[ticker] = data_minner.GET_YAHOO_OHLCV(ticker, '1y','1h')
+        yfinance_ohlcv[ticker] = GET_YAHOO_OHLCV(ticker, '1y','1h')
     return yfinance_ohlcv    
 
 def GET_YAHOO_OHLCV():
     tickers = ["MSFT","AAPL","GOOG"]
     yfinance_ohlcv={}
     for ticker in tickers:
-        yfinance_ohlcv[ticker] = data_minner.GET_YAHOO_OHLCV(ticker, '1mon','15m')
+        yfinance_ohlcv[ticker] = GET_YAHOO_OHLCV(ticker, '1mon','15m')
     return yfinance_ohlcv
 
 
@@ -44,26 +53,26 @@ def CRYPTO_SUMMERY():
     crypto_summary_url = "https://finance.yahoo.com/cryptocurrencies/?offset=0&count={}".format(num_of_crypto)
     headers = {"User-Agent": "Chrome/96.0.4664.110"}
     
-    soup = data_minner.GET_CRYPTO_SUMMARY_PAGE(crypto_summary_url, headers)
-    summary_table_vals = data_minner.CRYPTO_SUMMARY(soup)
-    crypto_summery = data_minner.FORMAT_CRYPTO_SUMMARY_DF(summary_table_vals)
+    soup = GET_CRYPTO_SUMMARY_PAGE(crypto_summary_url, headers)
+    summary_table_vals = CRYPTO_SUMMARY(soup)
+    crypto_summery = FORMAT_CRYPTO_SUMMARY_DF(summary_table_vals)
     return crypto_summery
 
 def CALC_APPEND_MACD(DF):
     df = DF.copy()
-    macd=pd.DataFrame(indicator.MACD(df))
+    macd=pd.DataFrame(MACD(df))
     df = df.assign(MACD=pd.Series(macd["macd"]).values,Signal=pd.Series(macd["signal"]).values)
     return df
 
-def CALC_APPEND_ATR(DF):
+def CALC_APPEND_ATR(DF, n=14):
     df = DF.copy()
-    atr=pd.DataFrame(indicator.ATR(df))
+    atr=pd.DataFrame(ATR(df, n))
     df = df.assign(ATR=pd.Series(atr['ATR']).values)
     return df
 
 def CALC_APPEND_BB(DF):
     df = DF.copy()
-    boll_band=pd.DataFrame(indicator.Boll_Band(df))
+    boll_band=pd.DataFrame(Boll_Band(df))
     df = df.assign(MB=pd.Series(boll_band['MB']).values,
                                  UB=pd.Series(boll_band['UB']).values,
                                  LB=pd.Series(boll_band['LB']).values,
@@ -72,20 +81,20 @@ def CALC_APPEND_BB(DF):
 
 def CALC_APPEND_ADX(DF):
     df = DF.copy()
-    atr=pd.DataFrame(indicator.ADX(df))
+    atr=pd.DataFrame(ADX(df))
     df = df.assign(ADX=pd.Series(atr['ADX']).values)
     return df
 
 def CALC_APPEND_RSI(DF):
     df = DF.copy()
-    atr=pd.DataFrame(indicator.RSI(df))
+    atr=pd.DataFrame(RSI(df))
     df = df.assign(RSI=pd.Series(atr['rsi']).values)
     return df
 
 def CALC_APPEND_RENKO(DF, binance_btc_ohlcv):
     df = DF.copy()
     rendo_data=pd.DataFrame(
-        indicator.renko_DF(df, binance_btc_ohlcv)
+        renko_DF(df, binance_btc_ohlcv)
         )    
     return rendo_data
 
@@ -108,78 +117,97 @@ crypto_summery_crawler = CRYPTO_SUMMERY()
 #==============================================================================
 #==============================================================================
 
-binance_btc_5m_ohlcv = data_minner.GET_BINANCE_OHLCV(
-    "BTC/USDT", 
-    ccxt.binance({'verbose': True}),
-    '5m',
-    200)
-
-binance_btc_5m_ohlcv['TIMESTAMP'] = pd.to_datetime(binance_btc_5m_ohlcv['TIMESTAMP'], unit='ms')
-binance_btc_5m_ohlcv = binance_btc_5m_ohlcv.iloc[::-1]
-binance_btc_5m_ohlcv.reset_index(inplace=True)
-binance_btc_5m_ohlcv.drop("index",axis=1,inplace=True)
-
-binance_btc_5m_ohlcv = CALC_APPEND_MACD(binance_btc_5m_ohlcv)
-binance_btc_5m_ohlcv = CALC_APPEND_ATR(binance_btc_5m_ohlcv)
-binance_btc_5m_ohlcv = CALC_APPEND_BB(binance_btc_5m_ohlcv)
-binance_btc_5m_ohlcv = CALC_APPEND_ADX(binance_btc_5m_ohlcv)
-binance_btc_5m_ohlcv = CALC_APPEND_RSI(binance_btc_5m_ohlcv)
-
-binance_btc_5m_ohlcv["roll_max_cp"] = binance_btc_5m_ohlcv["HIGH"].rolling(20).max()
-binance_btc_5m_ohlcv["roll_min_cp"] = binance_btc_5m_ohlcv["LOW"].rolling(20).min()
-binance_btc_5m_ohlcv["roll_max_vol"] = binance_btc_5m_ohlcv["VOLUME"].rolling(20).max()
-
-binance_btc_5m_ohlcv['five_minute_ret'] = strategyPerfIndex.RETURN_FOR_PERIOD(
-    binance_btc_5m_ohlcv,"five_minute")
-
-binance_btc_5m_ohlcv['CAGR']=strategyPerfIndex.CAGR(binance_btc_5m_ohlcv)
-binance_btc_5m_ohlcv['sharpe']=strategyPerfIndex.sharpe(binance_btc_5m_ohlcv,0.03)
-binance_btc_5m_ohlcv['sortino']=strategyPerfIndex.sortino(binance_btc_5m_ohlcv,0.03)
-
-binance_btc_5m_ohlcv = breakout(binance_btc_5m_ohlcv)
-
-def breakout(DF):
-    tickers_signal = {}
-    tickers_ret = {}
-    ohlc_dict = binance_btc_5m_ohlcv.copy()
-    print("calculating returns ")
-    for i in range(1,len(ohlc_dict)):
-        if tickers_signal == "":
-            tickers_ret.append(0)
-            if ohlc_dict["HIGH"][i]>=ohlc_dict["roll_max_cp"][i] and \
-               ohlc_dict["VOLUME"][i]>1.5*ohlc_dict["roll_max_vol"][i-1]:
-                tickers_signal = "Buy"
-            elif ohlc_dict["LOW"][i]<=ohlc_dict["roll_min_cp"][i] and \
-               ohlc_dict["VOLUME"][i]>1.5*ohlc_dict["roll_max_vol"][i-1]:
-                tickers_signal = "Sell"
-        
-        elif tickers_signal == "Buy":
-            if ohlc_dict["LOW"][i]<ohlc_dict["CLOSE"][i-1] - ohlc_dict["ATR"][i-1]:
-                tickers_signal = ""
-                tickers_ret.append(((ohlc_dict["CLOSE"][i-1] - ohlc_dict["ATR"][i-1])/ohlc_dict["Close"][i-1])-1)
-            elif ohlc_dict["LOW"][i]<=ohlc_dict["roll_min_cp"][i] and \
-               ohlc_dict["VOLUME"][i]>1.5*ohlc_dict["roll_max_vol"][i-1]:
-                tickers_signal = "Sell"
-                tickers_ret.append((ohlc_dict["CLOSE"][i]/ohlc_dict["CLOSE"][i-1])-1)
-            else:
-                tickers_ret.append((ohlc_dict["CLOSE"][i]/ohlc_dict["CLOSE"][i-1])-1)
-                
-        elif tickers_signal == "Sell":
-            if ohlc_dict["HIGH"][i]>ohlc_dict["CLOSE"][i-1] + ohlc_dict["ATR"][i-1]:
-                tickers_signal = ""
-                tickers_ret.append((ohlc_dict["CLOSE"][i-1]/(ohlc_dict["CLOSE"][i-1] + ohlc_dict["ATR"][i-1]))-1)
-            elif ohlc_dict["HIGH"][i]>=ohlc_dict["roll_max_cp"][i] and \
-               ohlc_dict["VOLUME"][i]>1.5*ohlc_dict["roll_max_vol"][i-1]:
-                tickers_signal = "Buy"
-                tickers_ret.append((ohlc_dict["CLOSE"][i-1]/ohlc_dict["CLOSE"][i])-1)
-            else:
-                tickers_ret.append((ohlc_dict["CLOSE"][i-1]/ohlc_dict["CLOSE"][i])-1)
-                
-    ohlc_dict["ret"] = np.array(tickers_ret)
-    return ohlc_dict
+def btc_binance_candle(candle_size):
+    exchange = ccxt.binance({'verbose': True})
+    # or switch the built-in rate-limiter on or off later after instantiation
+    exchange.enableRateLimit = True  # enable
+    
+    ticker = "BTC/USDT"
+    since=""
+    binance_btc_5m_ohlcv = GET_BINANCE_OHLCV(
+        ticker, 
+        exchange,
+        candle_size,#'1m, 1d, 1M(1 month)'
+        since)
+    
+    binance_btc_5m_ohlcv = binance_btc_5m_ohlcv.set_index('TIMESTAMP')
+    binance_btc_5m_ohlcv['DATE'] = pd.to_datetime(binance_btc_5m_ohlcv.index, utc=True, unit='ms').tz_convert('europe/rome')
+    binance_btc_5m_ohlcv = binance_btc_5m_ohlcv.set_index('DATE')
+    return binance_btc_5m_ohlcv
 
 
+btc_binance_1M_candle = btc_binance_candle("1M");
 
+
+print("\n" + plot(binance_btc_5m_ohlcv['CLOSE'][-40:],{'height': 15}))  # print the chart
+
+
+#==============================================================================
+#==============================================================================
+#==============================================================================
+#=======================GET CANDLES AND DRAW THE CHART=========================
+#==============================================================================
+#==============================================================================
+
+binance = ccxt.binance()
+symbol = 'BTC/USDT'
+timeframe = '1h'
+
+def print_chart(exchange, symbol, timeframe):
+    
+    # each ohlcv candle is a list of [ timestamp, open, high, low, close, volume ]
+    index = 4  # use close price from each ohlcv candle
+
+    height = 15
+    length = 80
+
+    print("\n" + exchange.name + ' ' + symbol + ' ' + timeframe + ' chart:')
+
+    # get a list of ohlcv candles
+    ohlcv = exchange.fetch_ohlcv(symbol, timeframe)
+
+    # get the ohlCv (closing price, index == 4)
+    series = [x[index] for x in ohlcv]
+    # print the chart
+    print("\n" + plot(series[-length:],{'height': height}))  # print the chart
+
+    last = ohlcv[len(ohlcv) - 1][index]  # last closing price
+    return last
+
+last = print_chart(binance, symbol, timeframe)
+
+# print the chart
+#==============================================================================
+#==============================================================================
+#==============================================================================
+#==============================================================================
+#==============================================================================
+#==============================================================================
+
+def calc_and_add_indicators(DF):
+    #binance_btc_5m_ohlcv = copy.deepcopy(DF)
+    binance_btc_5m_ohlcv = DF.copy();
+    binance_btc_5m_ohlcv = CALC_APPEND_MACD(binance_btc_5m_ohlcv)
+    binance_btc_5m_ohlcv = CALC_APPEND_ATR(binance_btc_5m_ohlcv)
+    binance_btc_5m_ohlcv = CALC_APPEND_BB(binance_btc_5m_ohlcv)
+    binance_btc_5m_ohlcv = CALC_APPEND_ADX(binance_btc_5m_ohlcv)
+    binance_btc_5m_ohlcv = CALC_APPEND_RSI(binance_btc_5m_ohlcv)
+    
+    binance_btc_5m_ohlcv["roll_max_cp"] = binance_btc_5m_ohlcv["HIGH"].rolling(20).max()
+    binance_btc_5m_ohlcv["roll_min_cp"] = binance_btc_5m_ohlcv["LOW"].rolling(20).min()
+    binance_btc_5m_ohlcv["roll_max_vol"] = binance_btc_5m_ohlcv["VOLUME"].rolling(20).max()
+    
+    binance_btc_5m_ohlcv['five_minute_ret'] = strategyPerfIndex.RETURN_FOR_PERIOD(
+        binance_btc_5m_ohlcv,"five_minute")
+    
+    binance_btc_5m_ohlcv['CAGR']=strategyPerfIndex.CAGR(binance_btc_5m_ohlcv)
+    binance_btc_5m_ohlcv['sharpe']=strategyPerfIndex.sharpe(binance_btc_5m_ohlcv,0.03)
+    binance_btc_5m_ohlcv['sortino']=strategyPerfIndex.sortino(binance_btc_5m_ohlcv,0.03)
+    return binance_btc_5m_ohlcv;
+
+btc_bina_5m_candle_with_indicators = pd.DataFrame(calc_and_add_indicators(binance_btc_5m_ohlcv))
+
+df = breakout(ohlc_dict)
 
 #===Strategy Performance KPI==
 strategyPerfIndex.volatility(binance_btc_5m_ohlcv)
@@ -189,10 +217,7 @@ print("Sortino = {}".format(strategyPerfIndex.sortino(binance_btc_5m_ohlcv,0.03)
 
 #visualization
 fig, ax = plt.subplots()
-plt.plot(binance_btc_5m_ohlcv["five_minute_ret"])
-plt.plot(binance_btc_5m_ohlcv["CAGR"])
-plt.plot(binance_btc_5m_ohlcv["sharpe"])
-plt.plot(binance_btc_5m_ohlcv["sortino"])
+plt.plot(df["ret"])
 plt.title("BTC/USD hourly return")
 plt.ylabel("cumulative return")
 plt.xlabel("5Min")
@@ -208,25 +233,6 @@ binance_btc_one_hour_ohlcv = data_minner.GET_BINANCE_OHLCV(
     ccxt.binance({'verbose': True}),
     '1h',
     1000)
-
-binance_btc_one_hour_ohlcv['TIMESTAMP'] = pd.to_datetime(binance_btc_one_hour_ohlcv['TIMESTAMP'], unit='ms')
-binance_btc_one_hour_ohlcv = binance_btc_one_hour_ohlcv.iloc[::-1]#reverse the df
-binance_btc_one_hour_ohlcv.reset_index(inplace=True)
-binance_btc_one_hour_ohlcv.drop("index",axis=1,inplace=True)#drop the old index
-
-
-binance_btc_one_hour_ohlcv = CALC_APPEND_MACD(binance_btc_one_hour_ohlcv)
-binance_btc_one_hour_ohlcv = CALC_APPEND_ATR(binance_btc_one_hour_ohlcv)
-binance_btc_one_hour_ohlcv = CALC_APPEND_BB(binance_btc_one_hour_ohlcv)
-binance_btc_one_hour_ohlcv = CALC_APPEND_ADX(binance_btc_one_hour_ohlcv)
-binance_btc_one_hour_ohlcv = CALC_APPEND_RSI(binance_btc_one_hour_ohlcv)
-
-binance_btc_one_hour_ohlcv['hourly_ret'] = strategyPerfIndex.RETURN_FOR_PERIOD(
-    binance_btc_one_hour_ohlcv,"hourly")
-
-binance_btc_one_hour_ohlcv['CAGR']=strategyPerfIndex.CAGR(binance_btc_one_hour_ohlcv)
-binance_btc_one_hour_ohlcv['sharpe']=strategyPerfIndex.sharpe(binance_btc_one_hour_ohlcv,0.03)
-binance_btc_one_hour_ohlcv['sortino']=strategyPerfIndex.sortino(binance_btc_one_hour_ohlcv,0.03)
 
 #===============Strategy Performance KPI====================
 strategyPerfIndex.volatility(binance_btc_one_hour_ohlcv)
