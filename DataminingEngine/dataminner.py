@@ -21,24 +21,52 @@ def GET_YAHOO_OHLCV(ticker, yperiod, interval):
     ohlcv_data[ticker] = temp
     return ohlcv_data    
 
-def GET_BINANCE_OHLCV(ticker, exchange, candle_size, since):
+def GET_BINANCE_OHLCV(ticker, exchange,ccxt, candle_size, since):
     """            
     '1h',limit=100
     """    
+    msec = 1000
+    minute = 60 * msec
+    hold = 30
     
-    #day = '2022-02-18 16:45:00'
-    #since = round(dt.strptime(str(day), '%Y-%m-%d %H:%M:%S').timestamp()*1000)
-    #btc_usdt_ohlcv = pd.DataFrame(exchange.fetch_ohlcv('ADA/USDT', '15m', since=since, limit=1000))        
+    exchange = ccxt.bitfinex({
+        'rateLimit': 10000,
+        'enableRateLimit': True,
+        # 'verbose': True,
+    })
     
-    btc_usdt_ohlcv = exchange.fetch_ohlcv(ticker,candle_size)    
-        
-    df_exchange_ohlcv = pd.DataFrame(btc_usdt_ohlcv)
-    df_exchange_ohlcv.columns  = ["TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"]
+    from_datetime = '2021-05-18 00:00:00'
+    from_timestamp = exchange.parse8601(from_datetime)
     
-   # df_exchange_ohlcv['TIMESTAMP'] = pd.to_datetime(df_exchange_ohlcv['TIMESTAMP'], unit='ms')   
+    now = exchange.milliseconds()
+
+# -----------------------------------------------------------------------------
+
+    data = []
     
-    time.sleep (exchange.rateLimit / 1000) 
-    return df_exchange_ohlcv
+    while from_timestamp < now:
+
+        try:
+            #btc_usdt_ohlcv = pd.DataFrame(exchange.fetch_ohlcv('ADA/USDT', '15m', since=since, limit=1000))        
+            
+            print(exchange.milliseconds(), 'Fetching candles starting from', exchange.iso8601(from_timestamp))
+
+            btc_usdt_ohlcv = exchange.fetch_ohlcv(ticker,candle_size,from_timestamp)    
+                
+            print(exchange.milliseconds(), 'Fetched', len(btc_usdt_ohlcv), 'candles')
+            
+            df_exchange_ohlcv = pd.DataFrame(btc_usdt_ohlcv)
+            df_exchange_ohlcv.columns  = ["TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"]
+            from_timestamp += len(df_exchange_ohlcv) * minute * 5
+           # df_exchange_ohlcv['TIMESTAMP'] = pd.to_datetime(df_exchange_ohlcv['TIMESTAMP'], unit='ms')   
+            data+=df_exchange_ohlcv
+            
+            return data
+        except (ccxt.ExchangeError, ccxt.AuthenticationError, ccxt.ExchangeNotAvailable, ccxt.RequestTimeout) as error:
+    
+            print('Got an error', type(error).__name__, error.args, ', retrying in', hold, 'seconds...')
+            time.sleep(hold)
+    
 
 def GET_ORDER_BOOK(exchange, ticker):
     orderbook_binance_btc_usdt = exchange.fetch_order_book(ticker) 
