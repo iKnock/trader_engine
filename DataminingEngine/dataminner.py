@@ -12,6 +12,8 @@ import datetime as dt
 import pandas as pd
 import time
 
+import ccxt
+
             
 def GET_YAHOO_OHLCV(ticker, yperiod, interval):         
     ohlcv_data = {}        
@@ -22,9 +24,10 @@ def GET_YAHOO_OHLCV(ticker, yperiod, interval):
     return ohlcv_data    
 
 def GET_BINANCE_OHLCV(ticker, exchange,ccxt, candle_size, since):
-    """            
-    '1h',limit=100
-    """    
+    exchange = ccxt.binance({'verbose': True})
+    
+    ticker = "BTC/USDT"
+    candle_size='5m'
     msec = 1000
     minute = 60 * msec
     hold = 30
@@ -42,7 +45,8 @@ def GET_BINANCE_OHLCV(ticker, exchange,ccxt, candle_size, since):
 
 # -----------------------------------------------------------------------------
 
-    data = []
+
+    data2 = []
     
     while from_timestamp < now:
 
@@ -55,13 +59,19 @@ def GET_BINANCE_OHLCV(ticker, exchange,ccxt, candle_size, since):
                 
             print(exchange.milliseconds(), 'Fetched', len(btc_usdt_ohlcv), 'candles')
             
-            df_exchange_ohlcv = pd.DataFrame(btc_usdt_ohlcv)
-            df_exchange_ohlcv.columns  = ["TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"]
-            from_timestamp += len(df_exchange_ohlcv) * minute * 5
+            first = btc_usdt_ohlcv[0][0]
+            last = btc_usdt_ohlcv[-1][0]
+            print('First candle epoch', first, exchange.iso8601(first))
+            print('Last candle epoch', last, exchange.iso8601(last))
+     
+            #df_exchange_ohlcv = pd.DataFrame(btc_usdt_ohlcv)
+            #df_exchange_ohlcv.columns  = ["TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"]
+            from_timestamp += len(btc_usdt_ohlcv) * minute * 5
+           # now = binance_btc_5m_ohlcv[0][0]
            # df_exchange_ohlcv['TIMESTAMP'] = pd.to_datetime(df_exchange_ohlcv['TIMESTAMP'], unit='ms')   
-            data+=df_exchange_ohlcv
+            data2+=btc_usdt_ohlcv
             
-            return data
+            #return data
         except (ccxt.ExchangeError, ccxt.AuthenticationError, ccxt.ExchangeNotAvailable, ccxt.RequestTimeout) as error:
     
             print('Got an error', type(error).__name__, error.args, ', retrying in', hold, 'seconds...')

@@ -128,7 +128,7 @@ def btc_binance_candle(candle_size):
         ticker, 
         exchange,
         ccxt,
-        candle_size,#'1m, 1d, 1M(1 month)'
+        '1m',#'1m, 1d, 1M(1 month)'
         since)
     
     binance_btc_5m_ohlcv = binance_btc_5m_ohlcv.set_index('TIMESTAMP')
@@ -157,7 +157,12 @@ def calc_and_add_indicators(DF):
     binance_btc_5m_ohlcv['sortino']=strategyPerfIndex.sortino(binance_btc_5m_ohlcv,0.03)
     return binance_btc_5m_ohlcv;
 
+df_5m_candle = pd.DataFrame(data2)
+df_5m_candle.columns  = ["TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"]
 
+df_5m_candle = df_5m_candle.set_index('TIMESTAMP')
+df_5m_candle['DATE'] = pd.to_datetime(df_5m_candle.index, utc=True, unit='ms').tz_convert('europe/rome')
+df_5m_candle = df_5m_candle.set_index('DATE')
 
 btc_binance_5m_candle = btc_binance_candle("5m");
 btc_bina_5m_candle_with_indicators = pd.DataFrame(calc_and_add_indicators(binance_btc_5m_ohlcv))
