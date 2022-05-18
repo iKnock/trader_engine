@@ -122,19 +122,61 @@ def btc_binance_candle(candle_size):
     # or switch the built-in rate-limiter on or off later after instantiation
     exchange.enableRateLimit = True  # enable
     
-    ticker = "BTC/USDT"
-    since=""
-    binance_btc_5m_ohlcv = GET_BINANCE_OHLCV(
-        ticker, 
-        exchange,
-        ccxt,
-        '1m',#'1m, 1d, 1M(1 month)'
-        since)
+    msec = 1000
+    minute = 60 * msec
+    hold = 30
     
-    binance_btc_5m_ohlcv = binance_btc_5m_ohlcv.set_index('TIMESTAMP')
-    binance_btc_5m_ohlcv['DATE'] = pd.to_datetime(binance_btc_5m_ohlcv.index, utc=True, unit='ms').tz_convert('europe/rome')
-    binance_btc_5m_ohlcv = binance_btc_5m_ohlcv.set_index('DATE')
-    return binance_btc_5m_ohlcv
+    exchange = ccxt.bitfinex({
+        'rateLimit': 10000,
+        'enableRateLimit': True,
+        # 'verbose': True,
+    })
+    
+    ticker = "BTC/USDT"    
+    
+    from_datetime = '2022-01-01 00:00:00'
+    from_timestamp = exchange.parse8601(from_datetime)    
+    now = exchange.milliseconds()
+    
+    candle_data = []
+    
+    while from_timestamp < now:
+
+        try:
+            print(exchange.milliseconds(), 'Fetching candles starting from', exchange.iso8601(from_timestamp))
+            
+            binance_bt_ohlcv = GET_BINANCE_CANDLE(
+                ticker, 
+                exchange,
+                candle_size,#'1m, 1d, 1M(1 month)'
+                from_timestamp)
+            
+            print(exchange.milliseconds(), 'Fetched', len(binance_bt_ohlcv), 'candles')
+            
+            first = binance_bt_ohlcv[0][0]
+            last = binance_bt_ohlcv[-1][0]
+            print('First candle epoch', first, exchange.iso8601(first))
+            print('Last candle epoch', last, exchange.iso8601(last))
+            
+            from_timestamp += len(binance_bt_ohlcv) * minute * 5
+                
+            print('from_timestamp', from_timestamp)
+            
+            candle_data+=binance_bt_ohlcv
+        except (ccxt.ExchangeError, ccxt.AuthenticationError, ccxt.ExchangeNotAvailable, ccxt.RequestTimeout) as error:
+        
+            print('Got an error', type(error).__name__, error.args, ', retrying in', hold, 'seconds...')
+            time.sleep(hold)
+    
+    
+    df_1h_candle = pd.DataFrame(candle_data)
+    df_1h_candle.columns  = ["TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"]
+
+    
+    df_1h_candle = df_1h_candle.set_index('TIMESTAMP')
+    df_1h_candle['DATE'] = pd.to_datetime(candle_data.index, utc=True, unit='ms').tz_convert('europe/rome')
+    df_1h_candle = df_1h_candle.set_index('DATE')
+    return df_1h_candle
 
 def calc_and_add_indicators(DF):
     #binance_btc_5m_ohlcv = copy.deepcopy(DF)
@@ -157,18 +199,15 @@ def calc_and_add_indicators(DF):
     binance_btc_5m_ohlcv['sortino']=strategyPerfIndex.sortino(binance_btc_5m_ohlcv,0.03)
     return binance_btc_5m_ohlcv;
 
-df_5m_candle = pd.DataFrame(data2)
-df_5m_candle.columns  = ["TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"]
 
-df_5m_candle = df_5m_candle.set_index('TIMESTAMP')
-df_5m_candle['DATE'] = pd.to_datetime(df_5m_candle.index, utc=True, unit='ms').tz_convert('europe/rome')
-df_5m_candle = df_5m_candle.set_index('DATE')
+btc_binance_5m_candle = btc_binance_candle("1d")
 
-btc_binance_5m_candle = btc_binance_candle("5m");
 btc_bina_5m_candle_with_indicators = pd.DataFrame(calc_and_add_indicators(binance_btc_5m_ohlcv))
 
+df_5m_candle.to_csv("df_5m_candle", sep='\t')
 
-print("\n" + plot(binance_btc_5m_ohlcv['CLOSE'][-40:],{'height': 15}))  # print the chart
+
+print("\n" + plot(df_5m_candle['CLOSE'][-40:],{'height': 15}))  # print the chart
 
 
 #==============================================================================

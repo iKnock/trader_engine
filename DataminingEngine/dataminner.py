@@ -76,7 +76,12 @@ def GET_BINANCE_OHLCV(ticker, exchange,ccxt, candle_size, since):
     
             print('Got an error', type(error).__name__, error.args, ', retrying in', hold, 'seconds...')
             time.sleep(hold)
+
+
+def GET_BINANCE_CANDLE(ticker, exchange, candle_size, from_timestamp):
     
+    btc_usdt_ohlcv = exchange.fetch_ohlcv(ticker,candle_size,from_timestamp)    
+    return btc_usdt_ohlcv    
 
 def GET_ORDER_BOOK(exchange, ticker):
     orderbook_binance_btc_usdt = exchange.fetch_order_book(ticker) 
