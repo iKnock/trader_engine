@@ -121,5 +121,23 @@ def import_csv_to_quest_db(file_path):
     print('*******************************************')
     print(response)
     print('*******************************************')
+
             
-sol_usdt_1m = scrape_candles_to_csv('sol_usdt_1m.csv', 'binance', 3, 'SOL/USDT', '5m', '2021-05-1900:00:00Z', 1000)
+file_name='sol_usdt_1m.csv'
+exchange='binance'
+max_retries='3'
+symbol='SOL/USDT'
+candle_size='5m'
+from_date='2021-05-1900:00:00Z'
+limit=1000
+
+sol_usdt_1m = scrape_candles_to_csv(file_name, 
+                                    exchange, 
+                                    max_retries, 
+                                    symbol, 
+                                    candle_size, 
+                                    from_date, 
+                                    limit)
+
+from_date=sol_usdt_1m.tail(1).index[0]
+

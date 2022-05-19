@@ -119,71 +119,10 @@ crypto_summery_crawler = CRYPTO_SUMMERY()
 
 #==============================================================================
 #==============================================================================
-#========================5 Min btc data with indicators=======================
+#========================query quest db=======================
 #==============================================================================
 #==============================================================================
 
-def btc_binance_candle(candle_size):
-    exchange = ccxt.binance({'verbose': True})
-    # or switch the built-in rate-limiter on or off later after instantiation
-    exchange.enableRateLimit = True  # enable
-    
-    msec = 1000
-    minute = 60 * msec
-    hold = 30
-    
-    exchange = ccxt.bitfinex({
-        'rateLimit': 10000,
-        'enableRateLimit': True,
-        # 'verbose': True,
-    })
-    
-    ticker = "BTC/USDT"    
-    
-    from_datetime = '2021-08-01 18:40:00'
-    from_timestamp = exchange.parse8601(from_datetime)    
-    now = exchange.milliseconds()
-    
-    candle_data = []
-    
-    while from_timestamp < now:
-
-        try:
-            print(exchange.milliseconds(), 'Fetching candles starting from', exchange.iso8601(from_timestamp))
-            
-            binance_bt_ohlcv = GET_BINANCE_CANDLE(
-                ticker, 
-                exchange,
-                candle_size,#'1m, 1d, 1M(1 month)'
-                from_timestamp)
-            
-            print(exchange.milliseconds(), 'Fetched', len(binance_bt_ohlcv), 'candles')
-            
-            first = binance_bt_ohlcv[0][0]
-            last = binance_bt_ohlcv[-1][0]
-            print('First candle epoch', first, exchange.iso8601(first))
-            print('Last candle epoch', last, exchange.iso8601(last))
-            
-            from_timestamp += len(binance_bt_ohlcv) * minute * 5
-                
-            print('from_timestamp', from_timestamp)
-            
-            candle_data+=binance_bt_ohlcv
-        except (ccxt.ExchangeError, ccxt.AuthenticationError, ccxt.ExchangeNotAvailable, ccxt.RequestTimeout) as error:
-        
-            print('Got an error', type(error).__name__, error.args, ', retrying in', hold, 'seconds...')
-            time.sleep(hold)
-    
-    
-    df_candle = pd.DataFrame(candle_data)
-    df_candle.columns  = ["TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"]
-
-    
-    df_candle = df_candle.set_index('TIMESTAMP')
-    df_candle['DATE'] = pd.to_datetime(candle_data.index, utc=True, unit='ms').tz_convert('europe/rome')
-    df_candle = df_candle.set_index('DATE')
-        
-    return df_candle
 
 host = 'http://localhost:9000'
 
@@ -202,10 +141,17 @@ run_query("CREATE TABLE IF NOT EXISTS tbl_btc_5m_candle (insert_ts TIMESTAMP, DA
  # insert row
 run_query("INSERT INTO tbl_btc_5m_candle VALUES(now(), "+123456+")")          
 
+#==============================================================================
+#==============================================================================
+#==============================================================================
+#==============================================================================
+#==============================================================================
+
 # Current time in nanoseconds
 def current_timestamp():
-    return int((datetime.datetime.utcnow() - datetime.datetime(1970, 1, 1)).total_seconds() * 1000) * 1000000
-             
+    return int((dt.datetime.utcnow() - dt.datetime(1970, 1, 1)).total_seconds() * 1000) * 1000000
+
+current_timestamp()             
 
 def calc_and_add_indicators(DF):
     #binance_btc_5m_ohlcv = copy.deepcopy(DF)
@@ -229,13 +175,35 @@ def calc_and_add_indicators(DF):
     return binance_btc_5m_ohlcv;
 
 
-btc_binance_5m_candle = btc_binance_candle("5m")
 
 btc_bina_5m_candle_with_indicators = pd.DataFrame(calc_and_add_indicators(binance_btc_5m_ohlcv))
 
 
 print("\n" + plot(df_5m_candle['CLOSE'][-40:],{'height': 15}))  # print the chart
 
+#==============================================================================
+#=============================Rendko data======================================
+#==============================================================================
+renko_data = CALC_APPEND_RENKO(binance_btc_5m_ohlcv.iloc[:,[0,1,2,3,4]],btc_binance_1M_candle)
+
+def convertRenkoToNumeric():
+    renko_data['open'] = renko_data['open'].astype('float')
+    renko_data['high'] = renko_data['high'].astype('float')
+    renko_data['low'] = renko_data['low'].astype('float')
+    renko_data['close'] = renko_data['close'].astype('float')
+    renko_data['uptrend'] = renko_data['uptrend'].astype('float')
+    return renko_data
+
+#visualization
+fig, ax = plt.subplots()
+plt.plot(renko_data["close"])
+plt.title("BTC/USD monthly return")
+plt.ylabel("cumulative return")
+plt.xlabel("months")
+ax.legend(["BTC/USD monthly return","one hour Return","five min"])
+#==============================================================================
+#==============================================================================
+#==============================================================================
 
 #==============================================================================
 #==============================================================================
@@ -336,27 +304,5 @@ plt.title("BTC/USD monthly return")
 plt.ylabel("cumulative return")
 plt.xlabel("months")
 ax.legend(["BTC/USD monthly return","one hour Return","five min"])
-#==============================================================================
-#=============================Rendko data======================================
-#==============================================================================
-renko_data = CALC_APPEND_RENKO(binance_btc_5m_ohlcv.iloc[:,[0,1,2,3,4]],btc_binance_1M_candle)
 
-def convertRenkoToNumeric():
-    renko_data['open'] = renko_data['open'].astype('float')
-    renko_data['high'] = renko_data['high'].astype('float')
-    renko_data['low'] = renko_data['low'].astype('float')
-    renko_data['close'] = renko_data['close'].astype('float')
-    renko_data['uptrend'] = renko_data['uptrend'].astype('float')
-    return renko_data
-
-#visualization
-fig, ax = plt.subplots()
-plt.plot(renko_data["close"])
-plt.title("BTC/USD monthly return")
-plt.ylabel("cumulative return")
-plt.xlabel("months")
-ax.legend(["BTC/USD monthly return","one hour Return","five min"])
-#==============================================================================
-#==============================================================================
-#==============================================================================
 #calculating overall strategy's KPIs
