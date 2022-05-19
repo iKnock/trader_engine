@@ -12,6 +12,8 @@ import sys
 import csv
 import requests
 import pandas as pd
+import matplotlib.pyplot as plt
+
 
 # -----------------------------------------------------------------------------
 
@@ -62,7 +64,7 @@ def scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
             return all_ohlcv
     return all_ohlcv
 
-def write_to_csv(filename, exchange, data):
+def write_to_csv(filename, exchange, data, symbol):
     p = Path("../data/raw/", str(exchange))
     p.mkdir(parents=True, exist_ok=True)
     full_path = p / str(filename)
@@ -98,7 +100,7 @@ def scrape_candles_to_csv(filename, exchange_id, max_retries, symbol, timeframe,
         df_candle = df_candle.set_index('DATE')
                 
         # save them to csv file
-        full_path = write_to_csv(filename, exchange, df_candle)
+        full_path = write_to_csv(filename, exchange, df_candle, symbol)
         
         import_csv_to_quest_db(full_path)
 
@@ -121,23 +123,25 @@ def import_csv_to_quest_db(file_path):
     print('*******************************************')
     print(response)
     print('*******************************************')
-
             
-file_name='sol_usdt_1m.csv'
+file_name='BTC_euro_15m.csv'
 exchange='binance'
-max_retries='3'
-symbol='SOL/USDT'
-candle_size='5m'
+max_retries=3
+symbol='BTC/EUR'
+candle_size='15m'
 from_date='2021-05-1900:00:00Z'
 limit=1000
 
-sol_usdt_1m = scrape_candles_to_csv(file_name, 
-                                    exchange, 
-                                    max_retries, 
-                                    symbol, 
-                                    candle_size, 
-                                    from_date, 
-                                    limit)
+def get_candles():
+    return scrape_candles_to_csv(file_name, 
+                                exchange, 
+                                max_retries, 
+                                symbol, 
+                                candle_size, 
+                                from_date, 
+                                limit)
+    
+btc_euro_15m = get_candles()
 
-from_date=sol_usdt_1m.tail(1).index[0]
+#date=btc_usdt_1m.tail(1).index[0]
 

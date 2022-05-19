@@ -6,6 +6,7 @@ Created on Mon May 16 17:45:52 2022
 """
 
 import numpy as np
+import pandas as pd
 from stocktrends import Renko
 
 def MACD(DF, a=12 ,b=26, c=9):
@@ -75,3 +76,43 @@ def renko_DF(DF, hourly_df):
     df2.brick_size = 4
     renko_df = df2.get_ohlc_data() #if using older version of the library please use get_bricks() instead
     return renko_df
+
+def CALC_APPEND_MACD(DF):
+    df = DF.copy()
+    macd=pd.DataFrame(MACD(df))
+    df = df.assign(MACD=pd.Series(macd["macd"]).values,Signal=pd.Series(macd["signal"]).values)
+    return df
+
+def CALC_APPEND_ATR(DF, n=14):
+    df = DF.copy()
+    atr=pd.DataFrame(ATR(df, n))
+    df = df.assign(ATR=pd.Series(atr['ATR']).values)
+    return df
+
+def CALC_APPEND_BB(DF):
+    df = DF.copy()
+    boll_band=pd.DataFrame(Boll_Band(df))
+    df = df.assign(MB=pd.Series(boll_band['MB']).values,
+                                 UB=pd.Series(boll_band['UB']).values,
+                                 LB=pd.Series(boll_band['LB']).values,
+                                 BB_Width=pd.Series(boll_band['BB_Width']).values)
+    return df
+
+def CALC_APPEND_ADX(DF):
+    df = DF.copy()
+    adx=pd.DataFrame(ADX(df))
+    df = df.assign(ADX=pd.Series(adx['ADX']).values)
+    return df
+
+def CALC_APPEND_RSI(DF):
+    df = DF.copy()
+    rsi=pd.DataFrame(RSI(df))
+    df = df.assign(RSI=pd.Series(rsi['rsi']).values)
+    return df
+
+def CALC_APPEND_RENKO(DF, binance_btc_ohlcv):
+    df = DF.copy()
+    rendo_data=pd.DataFrame(
+        renko_DF(df, binance_btc_ohlcv)
+        )    
+    return rendo_data
