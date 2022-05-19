@@ -13,15 +13,12 @@ import csv
 import requests
 import pandas as pd
 import matplotlib.pyplot as plt
-
+import ccxt
 
 # -----------------------------------------------------------------------------
 
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(''))))
 sys.path.append(root + '/codes/TRADER-ENGINE/trader_engine/csv')
-
-import ccxt
-
 
 # -----------------------------------------------------------------------------
 

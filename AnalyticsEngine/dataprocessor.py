@@ -64,8 +64,6 @@ def CRYPTO_SUMMERY():
     crypto_summery = FORMAT_CRYPTO_SUMMARY_DF(summary_table_vals)
     return crypto_summery
 
-
-
 #==============================================================================
 #==============================================================================
 #==============================================================================
@@ -93,8 +91,8 @@ current_timestamp()
 
 def calc_and_add_indicators(DF):
     #binance_btc_5m_ohlcv = copy.deepcopy(DF)
-    binance_btc_5m_ohlcv = DF.copy();
-    binance_btc_5m_ohlcv = CALC_APPEND_MACD(binance_btc_5m_ohlcv)
+    binance_btc_5m_ohlcv = btc_euro_5m;
+    binance_btc_5m_ohlcv = CALC_APPEND_MACD(btc_euro_5m)
     binance_btc_5m_ohlcv = CALC_APPEND_ATR(binance_btc_5m_ohlcv)
     binance_btc_5m_ohlcv = CALC_APPEND_BB(binance_btc_5m_ohlcv)
     binance_btc_5m_ohlcv = CALC_APPEND_ADX(binance_btc_5m_ohlcv)
@@ -114,7 +112,8 @@ def calc_and_add_indicators(DF):
 
 
 
-btc_bina_5m_candle_with_indicators = pd.DataFrame(calc_and_add_indicators(binance_btc_5m_ohlcv))
+btc_euro_1h_with_indicators = pd.DataFrame(
+    calc_and_add_indicators(btc_euro_5m))
 
 df = breakout(ohlc_dict)
 

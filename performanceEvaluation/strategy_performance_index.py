@@ -51,7 +51,8 @@ class StrategyPerformanceIndex:
     
     def RETURN_FOR_PERIOD(self, DF, period):
     # calculating monthly return for each stock and consolidating return info by stock in a separate dataframe
-        ohlc_dict = copy.deepcopy(DF)
+        #ohlc_dict = copy.deepcopy(DF)
+        ohlc_dict = DF.copy()
         return_df = pd.DataFrame()    
         print("calculating "+period+" return")
         ohlc_dict[period+"_ret"] = ohlc_dict["CLOSE"].pct_change()
