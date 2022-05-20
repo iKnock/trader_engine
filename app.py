@@ -16,7 +16,7 @@ def read_latest_candles():
 
         fetch_candles(since, append)
     except ValueError:
-        append = False
+        append = True
         fetch_candles(const.since, append)
 
 
@@ -43,11 +43,10 @@ def read_db():
 
 #pd.DataFrame(df).duplicated().values
 
-#print(len(util.read_csv_df("./data/raw/Binance/BTC_euro_30m.csv")))
+#df=pd.DataFrame(util.read_csv_df("./data/raw/Binance/BTC_euro_30m.csv"))
+#df = util.format_candle_data(df)
 
 read_latest_candles()
-
-
 
 """
 # Creating a DataFrame object

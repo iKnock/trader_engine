@@ -18,7 +18,7 @@ import pandas as pd
 # -----------------------------------------------------------------------------
 
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(''))))
-sys.path.append(root + '/codes/TRADER-ENGINE/trader_engine/csv')
+sys.path.append(root + '/codes/TRADER-ENGINE/trader_engine')
 
 
 # -----------------------------------------------------------------------------
@@ -27,7 +27,7 @@ def retry_fetch_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
     num_retries = 0
     try:
         num_retries += 1
-        ohlcv = exchange.fetch_ohlcv(symbol, timeframe, since)
+        ohlcv = exchange.fetch_ohlcv(symbol, timeframe, since, limit)
         # print('Fetched', len(ohlcv), symbol, 'candles from', exchange.iso8601 (ohlcv[0][0]), 'to', exchange.iso8601 (ohlcv[-1][0]))
         return ohlcv
     except Exception:
