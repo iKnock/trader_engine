@@ -12,7 +12,7 @@ def read_latest_candles():
             append = False
         else:
             since = from_date
-            append = True
+            append = False
 
         fetch_candles(since, append)
     except ValueError:
@@ -31,33 +31,20 @@ def fetch_candles(since, append):
                    append)
 
 
-def read_db():
+def read_db(today):
     host = 'http://localhost:9000'
     json = util.run_query(host, "SELECT * from " + "'" + const.file_name + "'")
     dff = util.format_candle_data(pd.DataFrame(json.get("dataset")))
+
+    #now = pd.to_datetime(today, utc=True, unit='ms').tz_convert('europe/rome')
+
     dff = dff[(dff.index >= const.since) & (dff.index <= '2022-05-20 22:00:00')]
     dff = dff.sort_index(axis=0, ascending=True, na_position='last')
     dff.drop_duplicates(inplace=True)
     return dff
 
 
-# df = read_db()
-
-read_latest_candles()
-
-#util.current_timestamp()
-
-"""
-# Creating a DataFrame object
-df = pd.DataFrame(employees,
-                  columns = ['Name', 'Age', 'City'])
- 
-# Selecting duplicate rows based
-# on 'City' column
-duplicate = df[df.duplicated('City')]
- 
-print("Duplicate Rows based on City :")
- 
-# Print the resultant Dataframe
-duplicate
-"""
+if __name__ == '__main__':
+    df = read_db(util.current_timestamp())
+    #read_latest_candles()
+    # util.current_timestamp()
