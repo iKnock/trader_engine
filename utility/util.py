@@ -40,13 +40,12 @@ def format_candle_data(df):
 
     df_candle = df_candle.set_index('TIMESTAMP')
     df_candle['DATE'] = pd.to_datetime(df_candle.index, utc=True, unit='ms').tz_convert('europe/rome')
-    #df_candle['DATE'] = pd.to_datetime(df_candle.tail(1).values[0, 0], unit='ms')
+    # df_candle['DATE'] = pd.to_datetime(df_candle.tail(1).values[0, 0], unit='ms')
     df_candle = df_candle.set_index('DATE')
     return df_candle
 
 
 def run_query(host, sql_query):
-
     query_params = {'query': sql_query, 'fmt': 'json'}
     try:
         response = requests.get(host + '/exec', params=query_params)
@@ -57,11 +56,6 @@ def run_query(host, sql_query):
         print(f'Error: {e}', file=sys.stderr)
 
 
-
-"""
- # create table
-run_query("CREATE TABLE IF NOT EXISTS tbl_btc_5m_candle (insert_ts TIMESTAMP, DATE TIMESTAMP, OPEN DOUBLE, HIGH DOUBLE, LOW DOUBLE, CLOSE DOUBLE, VOLUME DOUBLE ")
- 
- # insert row
-run_query("INSERT INTO tbl_btc_5m_candle VALUES(now(), "+123456+")")      
-"""
+# Current time in nanoseconds
+def current_timestamp():
+    return int((dt.datetime.utcnow() - dt.datetime(1970, 1, 1)).total_seconds() * 1000) * 1000000

@@ -83,11 +83,8 @@ crypto_summery_crawler = CRYPTO_SUMMERY()
 #==============================================================================
 #==============================================================================
 
-# Current time in nanoseconds
-def current_timestamp():
-    return int((dt.datetime.utcnow() - dt.datetime(1970, 1, 1)).total_seconds() * 1000) * 1000000
 
-current_timestamp()             
+
 
 def calc_and_add_indicators(DF):
     #binance_btc_5m_ohlcv = copy.deepcopy(DF)
@@ -236,27 +233,3 @@ def print_chart(exchange, symbol, timeframe):
     return last
 
 last = print_chart(binance, symbol, timeframe)
-
-# print the chart
-#==============================================================================
-#==============================================================================
-#========================query quest db========================================
-#==============================================================================
-#==============================================================================
-
-host = 'http://localhost:9000'
-
-def run_query(sql_query):
-    query_params = {'query': sql_query, 'fmt' : 'json'}
-    try:
-        response = requests.get(host + '/exec', params=query_params)
-        json_response = json.loads(response.text)
-        print(json_response)
-    except requests.exceptions.RequestException as e:
-        print(f'Error: {e}', file=sys.stderr)
-        
- # create table
-run_query("CREATE TABLE IF NOT EXISTS tbl_btc_5m_candle (insert_ts TIMESTAMP, DATE TIMESTAMP, OPEN DOUBLE, HIGH DOUBLE, LOW DOUBLE, CLOSE DOUBLE, VOLUME DOUBLE ")
- 
- # insert row
-run_query("INSERT INTO tbl_btc_5m_candle VALUES(now(), "+123456+")")          
