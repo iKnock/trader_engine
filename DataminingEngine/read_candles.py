@@ -20,7 +20,6 @@ import pandas as pd
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(''))))
 sys.path.append(root + '/codes/TRADER-ENGINE/trader_engine')
 
-
 # -----------------------------------------------------------------------------
 
 def retry_fetch_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
@@ -46,8 +45,6 @@ def scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
         ohlcv = retry_fetch_ohlcv(exchange, max_retries, symbol, timeframe, fetch_since, limit)
         if len(ohlcv) > 0:
             # if we have reached the beginning of history
-            print('*******************************************')
-            print(len(ohlcv))
             print('*******************************************')
             if ohlcv[0][0] >= earliest_timestamp:
                 break

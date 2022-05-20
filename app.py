@@ -33,18 +33,18 @@ def fetch_candles(since, append):
 
 def read_db():
     host = 'http://localhost:9000'
-    json = util.run_query(host, "SELECT * from 'BTC_euro_30m.csv'")
-    df = pd.DataFrame(json.get("dataset"))
-    df = util.format_candle_data(df)
-    return df
+    json = util.run_query(host, "SELECT * from " + "'" + const.file_name + "'")
+    dff = util.format_candle_data(pd.DataFrame(json.get("dataset")))
+    dff = dff[(dff.index >= +"'" + const.since + "'") & (dff.index <= '2022-05-20 22:00:00')]
+    dff = dff.sort_index(axis=0, ascending=True, na_position='last')
+    dff.drop_duplicates(inplace=True)
+    return dff
 
-#df=read_db()
-#duplicate = df[df.duplicated()]
 
-#pd.DataFrame(df).duplicated().values
+#df = read_db()
 
-#df=pd.DataFrame(util.read_csv_df("./data/raw/Binance/BTC_euro_30m.csv"))
-#df = util.format_candle_data(df)
+# df=pd.DataFrame(util.read_csv_df("./data/raw/Binance/BTC_euro_30m.csv"))
+# df = util.format_candle_data(df)
 
 read_latest_candles()
 
