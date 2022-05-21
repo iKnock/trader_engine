@@ -27,7 +27,7 @@ def fetch_candles(since, append):
                    const.symbol,
                    const.candle_size,
                    since,
-                   const.limit,
+                   util.calc_limit(since),
                    append)
 
 
@@ -38,13 +38,13 @@ def read_db(today):
 
     #now = pd.to_datetime(today, utc=True, unit='ms').tz_convert('europe/rome')
 
-    dff = dff[(dff.index >= const.since) & (dff.index <= '2022-05-20 22:00:00')]
-    dff = dff.sort_index(axis=0, ascending=True, na_position='last')
-    dff.drop_duplicates(inplace=True)
+    #dff = dff[(dff.index >= const.since) & (dff.index <= '2022-05-20 22:00:00')]
+    #dff = dff.sort_index(axis=0, ascending=True, na_position='last')
+    #dff.drop_duplicates(inplace=True)
     return dff
 
 
 if __name__ == '__main__':
-    df = read_db(util.current_timestamp())
-    #read_latest_candles()
+    #df = read_db(util.current_timestamp())
+    read_latest_candles()
     # util.current_timestamp()

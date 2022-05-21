@@ -11,10 +11,12 @@ import datetime as dt
 import sys
 import requests
 import json
+import utility.constants as const
+import numpy as np
 
 
 def read_csv_last_date():
-    p = Path("./data/raw/Binance/BTC_euro_30m.csv")
+    p = Path("./data/raw/Binance/BTC_euro_5m_test.csv")
     try:
         btc_df = pd.read_csv(p)
         df_candle = pd.DataFrame(btc_df)
@@ -59,3 +61,24 @@ def run_query(host, sql_query):
 # Current time in nanoseconds
 def current_timestamp():
     return int((dt.datetime.utcnow() - dt.datetime(1970, 1, 1)).total_seconds() * 1000) * 1000000
+
+
+def calc_limit(since):
+    now = dt.datetime.now()#is on +2 utc at dev
+   # since = '2022-05-20 15:15:00'
+
+    since_date = dt.datetime.strptime(since, '%Y-%m-%d %H:%M:%S')#is on utc 00 timezone
+
+    duration = now - since_date
+
+    seconds_in_day = 24 * 60 * 60
+    diff = divmod(duration.days * seconds_in_day + duration.seconds, 60)
+    (0, 8)
+    limit = None
+    can_s = const.candle_size
+    print(type(can_s))
+    can_s = int(can_s.removesuffix(can_s[-1]))
+    can_s = int(can_s)
+    if const.candle_unit == "minute":
+        limit = int(diff[0] / can_s)
+    return limit
