@@ -7,7 +7,9 @@ Created on Thu May 19 23:55:03 2022
 
 from pathlib import Path
 import pandas as pd
-import datetime as dt
+# import datetime as dt
+from datetime import datetime as dt, timezone as tz
+
 import sys
 import requests
 import json
@@ -21,7 +23,7 @@ def read_csv_last_date():
         btc_df = pd.read_csv(p)
         df_candle = pd.DataFrame(btc_df)
         formated_date = pd.to_datetime(df_candle.tail(1).values[0, 0], unit='ms')
-        date_str = dt.datetime.strptime(str(formated_date), '%Y-%m-%d %H:%M:%S').strftime(
+        date_str = dt.strptime(str(formated_date), '%Y-%m-%d %H:%M:%S').strftime(
             '%Y-%m-%d %H:%M:%S')
         return date_str
     except Exception:
@@ -64,11 +66,11 @@ def current_timestamp():
 
 
 def calc_limit(since):
-    now = dt.datetime.now()#is on +2 utc at dev
-   # since = '2022-05-20 15:15:00'
+    now = dt.utcnow()  #
+    # since = '2022-05-20 15:15:00'
 
-    since_date = dt.datetime.strptime(since, '%Y-%m-%d %H:%M:%S')#is on utc 00 timezone
-
+    since_date = dt.strptime(since, '%Y-%m-%d %H:%M:%S')  # is on utc 00 timezone
+    #    print(since_date.tzinfo)
     duration = now - since_date
 
     seconds_in_day = 24 * 60 * 60
