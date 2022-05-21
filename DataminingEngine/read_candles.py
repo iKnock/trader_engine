@@ -7,7 +7,7 @@ Created on Thu May 19 15:36:25 2022
 
 import os
 from pathlib import Path
-
+import datetime as dt
 import sys
 import csv
 import requests
@@ -43,6 +43,7 @@ def scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
     all_ohlcv = []
     while True:
         fetch_since = earliest_timestamp - timedelta
+        #dt.datetime.fromtimestamp(fetch_since / 1e3) to see fetch_since in date format
         ohlcv = retry_fetch_ohlcv(exchange, max_retries, symbol, timeframe, fetch_since, limit)
         if len(ohlcv) > 0:
             # if we have reached the beginning of history
