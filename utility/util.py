@@ -17,10 +17,11 @@ import utility.constants as const
 import numpy as np
 
 
-def read_csv_last_date():
-    p = Path("./data/raw/Binance/BTC_euro_5m_test.csv")
+def read_csv_last_date(exchange, file_name):
+    p = Path("./data/raw/", str(exchange))
+    full_path = p / str(file_name)
     try:
-        btc_df = pd.read_csv(p)
+        btc_df = pd.read_csv(full_path)
         df_candle = pd.DataFrame(btc_df)
         formated_date = pd.to_datetime(df_candle.tail(1).values[0, 0], unit='ms')
         date_str = dt.strptime(str(formated_date), '%Y-%m-%d %H:%M:%S').strftime(
