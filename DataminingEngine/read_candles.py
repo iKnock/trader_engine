@@ -43,7 +43,7 @@ def scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
     all_ohlcv = []
     while True:
         fetch_since = earliest_timestamp - timedelta
-        #dt.datetime.fromtimestamp(fetch_since / 1e3) to see fetch_since in date format
+        # dt.datetime.fromtimestamp(fetch_since / 1e3) to see fetch_since in date format
         ohlcv = retry_fetch_ohlcv(exchange, max_retries, symbol, timeframe, fetch_since, limit)
         if len(ohlcv) > 0:
             # if we have reached the beginning of history
@@ -61,6 +61,56 @@ def scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
             print(symbol + ' has no market data ')
             return all_ohlcv
     return all_ohlcv
+
+
+# def scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
+#     earliest_timestamp = exchange.milliseconds()
+#     timeframe_duration_in_seconds = exchange.parse_timeframe(timeframe)
+#     timeframe_duration_in_ms = timeframe_duration_in_seconds * 1000
+#
+#     all_ohlcv = []
+#     while True:
+#         if limit > 1000:
+#             new_limit = 1000
+#             timedelta = new_limit * timeframe_duration_in_ms
+#             limit = limit - new_limit
+#             fetch_since = earliest_timestamp - timedelta
+#             print("========featch since if================")
+#             print(dt.datetime.fromtimestamp(fetch_since / 1e3))
+#         else:
+#             timedelta = limit * timeframe_duration_in_ms
+#             fetch_since = earliest_timestamp - timedelta
+#             print("========featch since else================")
+#             print(dt.datetime.fromtimestamp(fetch_since / 1e3))
+#
+#         # dt.datetime.fromtimestamp(fetch_since / 1e3) to see fetch_since in date format
+#         ohlcv = retry_fetch_ohlcv(exchange, max_retries, symbol, timeframe, fetch_since, limit)
+#         if len(ohlcv) > 0:
+#             # if we have reached the beginning of history
+#             print('*******************************************')
+#             if ohlcv[0][0] >= earliest_timestamp:
+#                 print(dt.datetime.fromtimestamp(ohlcv[0][0] / 1e3))
+#                 print(dt.datetime.fromtimestamp(earliest_timestamp / 1e3))
+#                 break
+#             earliest_timestamp = ohlcv[0][0]
+#             #earliest_timestamp = fetch_since
+#             all_ohlcv = ohlcv + all_ohlcv
+#             print(len(all_ohlcv), symbol, 'candles in total from', exchange.iso8601(all_ohlcv[0][0]), 'to',
+#                   exchange.iso8601(all_ohlcv[-1][0]))
+#
+#             print("=========bef ex condition=====fetch_since and since==========")
+#             print(dt.datetime.fromtimestamp(fetch_since / 1e3))
+#             print(dt.datetime.fromtimestamp(since / 1e3))
+#             # if we have reached the checkpoint
+#             if fetch_since < since:
+#                 print("=========exit condition=====fetch_since >= since==========")
+#                 print(dt.datetime.fromtimestamp(fetch_since / 1e3))
+#                 print(dt.datetime.fromtimestamp(since / 1e3))
+#                 break
+#         else:
+#             print(symbol + ' has no market data ')
+#             return all_ohlcv
+#     return all_ohlcv
 
 
 def write_to_csv(filename, exchange, data, symbol, append):

@@ -60,11 +60,6 @@ def run_query(host, sql_query):
         print(f'Error: {e}', file=sys.stderr)
 
 
-# Current time in nanoseconds
-def current_timestamp():
-    return int((dt.datetime.utcnow() - dt.datetime(1970, 1, 1)).total_seconds() * 1000) * 1000000
-
-
 def calc_limit(since):
     now = dt.utcnow()  #
     # since = '2022-05-20 15:15:00'
@@ -83,4 +78,6 @@ def calc_limit(since):
     can_s = int(can_s)
     if const.candle_unit == "minute":
         limit = int(diff[0] / can_s)
+        print("==========limit==========")
+        print(limit)
     return limit
