@@ -12,12 +12,12 @@ def load_data():
     # now = pd.to_datetime(today, utc=True).tz_convert('europe/rome')
     now = dt.utcnow()
 
-    now = pd.to_datetime(now, utc=True).tz_convert('europe/rome')
-    since = str(now - filter_by_duration(24, "hours"))
+  #  now = pd.to_datetime(now, utc=True).tz_convert('europe/rome')
+ #   since = str(now - filter_by_duration(24, "hours"))
 
-    since = pd.to_datetime(since, utc=True).tz_convert('europe/rome')
+    since = pd.to_datetime(const.since, utc=True).tz_convert('europe/rome')
 
-    dff = dff[(dff.index >= since) & (dff.index <= now)]
+#    dff = dff[(dff.index >= since) & (dff.index <= now)]
 
     dff.drop_duplicates(inplace=True)
     dff = dff.sort_index(axis=0, ascending=True, na_position='last')

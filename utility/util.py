@@ -42,8 +42,8 @@ def format_candle_data(df):
     df_candle.columns = ["TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"]
 
     df_candle = df_candle.set_index('TIMESTAMP')
-    #df_candle['DATE'] = pd.to_datetime(df_candle.index, utc=True, unit='ms').tz_convert('europe/rome')
-    df_candle['DATE'] = pd.to_datetime(df_candle.tail(1).values[0, 0], unit='ms')
+    df_candle['DATE'] = pd.to_datetime(df_candle.index, utc=True, unit='ms').tz_convert('europe/rome')
+    #df_candle['DATE'] = pd.to_datetime(df_candle.tail(1).values[0, 0], unit='ms')
     df_candle = df_candle.set_index('DATE')
     return df_candle
 

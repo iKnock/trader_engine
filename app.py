@@ -9,4 +9,5 @@ def run():
 
 
 if __name__ == '__main__':
-    print(run())
+    df_ind = run()
+    print(df_ind)
