@@ -7,17 +7,16 @@ Created on Thu May 19 15:36:25 2022
 
 import os
 from pathlib import Path
-import datetime as dt
 import sys
 import csv
 import requests
 import utility.util as util
-import pandas as pd
 
 # -----------------------------------------------------------------------------
 
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(''))))
 sys.path.append(root + '/codes/TRADER-ENGINE/trader_engine')
+
 
 # -----------------------------------------------------------------------------
 
@@ -127,8 +126,6 @@ def get_candles(file_name, exchange, max_retries, symbol, candle_size, since, li
                                  since,
                                  limit,
                                  append)
-
-
 
 # def scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
 #     earliest_timestamp = exchange.milliseconds()

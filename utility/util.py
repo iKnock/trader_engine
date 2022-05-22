@@ -7,14 +7,12 @@ Created on Thu May 19 23:55:03 2022
 
 from pathlib import Path
 import pandas as pd
-# import datetime as dt
 from datetime import datetime as dt, timezone as tz
 
 import sys
 import requests
 import json
 import utility.constants as const
-import numpy as np
 
 
 def read_csv_last_date(exchange, file_name):
@@ -44,8 +42,8 @@ def format_candle_data(df):
     df_candle.columns = ["TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"]
 
     df_candle = df_candle.set_index('TIMESTAMP')
-    df_candle['DATE'] = pd.to_datetime(df_candle.index, utc=True, unit='ms').tz_convert('europe/rome')
-    # df_candle['DATE'] = pd.to_datetime(df_candle.tail(1).values[0, 0], unit='ms')
+    #df_candle['DATE'] = pd.to_datetime(df_candle.index, utc=True, unit='ms').tz_convert('europe/rome')
+    df_candle['DATE'] = pd.to_datetime(df_candle.tail(1).values[0, 0], unit='ms')
     df_candle = df_candle.set_index('DATE')
     return df_candle
 
@@ -75,10 +73,11 @@ def calc_limit(since):
     limit = None
     can_s = const.candle_size
     print(type(can_s))
-    can_s = int(can_s.removesuffix(can_s[-1]))
+    can_s = int(can_s[:-1])
     can_s = int(can_s)
     if const.candle_unit == "minute":
         limit = int(diff[0] / can_s)
         print("==========limit==========")
         print(limit)
+    #else convert unit of diff[0] to candle_unit
     return limit
