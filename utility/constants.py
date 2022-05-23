@@ -5,7 +5,7 @@ exchange = 'binance'
 max_retries = 3
 symbol = 'BTC/EUR'
 candle_size = '5m'
-since = '2022-05-22 12:57:00'
+since = '2022-05-22 23:10:00'
 limit = 1
 
 min_in_day = 1440
