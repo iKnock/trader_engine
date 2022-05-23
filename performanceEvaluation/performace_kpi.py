@@ -6,7 +6,7 @@ import copy
 def CAGR(DF):
     """function to calculate the Cumulative Annual Growth Rate of a trading
     strategy(bought stock) for a certain period of time"""
-    
+
     df = copy.deepcopy(DF)
     df["return"] = DF["CLOSE"].pct_change()
     df["cum_return"] = (1 + df["return"]).cumprod()
@@ -60,8 +60,7 @@ def return_on_period(DF, period):
     return_df.dropna(inplace=True)
     return return_df
 
-    # df['five_minute_ret'] = sp.RETURN_FOR_PERIOD(df, "five_minute")
-
+# df['five_minute_ret'] = sp.RETURN_FOR_PERIOD(df, "five_minute")
 # df['CAGR'] = sp.CAGR(df)
 # df['sharpe'] = sp.sharpe(df, 0.03)
 # df['sortino'] = sp.sortino(df, 0.03)

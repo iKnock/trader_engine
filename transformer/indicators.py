@@ -17,7 +17,7 @@ def macd(DF, a=12, b=26, c=9):
     return df.loc[:, ["macd", "signal"]]  # : means all and loc accept the rows and col as param
 
 
-def atr(DF, n=14):
+def atr(DF, n=20):
     "function to calculate True Range and Average True Range"
     df = DF.copy()
     df["H-L"] = df["HIGH"] - df["LOW"]

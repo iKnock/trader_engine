@@ -1,5 +1,5 @@
-import AnalyticsEngine.indicators as indicators
-import datamining_engine.load_data as ld
+import transformer.indicators as indicators
+import extract_and_load.load_data as ld
 import utility.constants as const
 import utility.util as util
 import pandas as pd
@@ -9,7 +9,6 @@ from datetime import datetime as dt, timezone as tz, timedelta as td
 def cal_indicators(data_f):
     df = data_f.copy()
     df_with_indicator = pd.DataFrame(indicators.calc_and_add_indicators(df))
-    print(df_with_indicator)
     return df_with_indicator
 
 

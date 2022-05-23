@@ -1,4 +1,4 @@
-import datamining_engine.read_candles_ccxt as rd
+import extract_and_load.read_candles_ccxt as rd
 import utility.constants as const
 import utility.util as util
 import config.ccxt_wrapper as ccxt_wrapper
