@@ -5,6 +5,7 @@ import utility.util as util
 from datetime import datetime as dt, timezone as tz, timedelta as td
 import utility.visualization_util as vis
 import numpy as np
+import pandas as pd
 
 
 def run():
@@ -25,52 +26,53 @@ def breakout(data_f):
     tickers_signal = ""
 
     ohlc_dict.dropna(inplace=True)
+    df_signal = [0]
 
     print("calculating returns******************* ")
     for i in range(1, len(ohlc_dict)):
         if tickers_signal == "":
             tickers_ret.append(0)
+            df_signal.append(0)
             if ohlc_dict["HIGH"][i] >= ohlc_dict["roll_max_cp"][i] and \
                     ohlc_dict["VOLUME"][i] > 1.5 * ohlc_dict["roll_max_vol"][i - 1]:
                 tickers_signal = "Buy"
-            # ohlc_dict['SIGNAL'] = ["Buy"]
             elif ohlc_dict["LOW"][i] <= ohlc_dict["roll_min_cp"][i] and \
                     ohlc_dict["VOLUME"][i] > 1.5 * ohlc_dict["roll_max_vol"][i - 1]:
                 tickers_signal = "Sell"
-            # ohlc_dict['SIGNAL'] = ["Sell"]
 
         elif tickers_signal == "Buy":
             if ohlc_dict["LOW"][i] < ohlc_dict["CLOSE"][i - 1] - ohlc_dict["ATR"][i - 1]:
                 tickers_signal = ""
-                #    ohlc_dict['SIGNAL'] = [""]
+                df_signal.append("N/A")
                 tickers_ret.append(
                     ((ohlc_dict["CLOSE"][i - 1] - ohlc_dict["ATR"][i - 1]) / ohlc_dict["CLOSE"][i - 1]) - 1)
             elif ohlc_dict["LOW"][i] <= ohlc_dict["roll_min_cp"][i] and \
                     ohlc_dict["VOLUME"][i] > 1.5 * ohlc_dict["roll_max_vol"][i - 1]:
                 tickers_signal = "Sell"
-                #  ohlc_dict['SIGNAL'] = ["Sell"]
+                df_signal.append(tickers_signal)
                 tickers_ret.append((ohlc_dict["CLOSE"][i] / ohlc_dict["CLOSE"][i - 1]) - 1)
             else:
                 tickers_ret.append((ohlc_dict["CLOSE"][i] / ohlc_dict["CLOSE"][i - 1]) - 1)
-            #   ohlc_dict['SIGNAL'] = ["Buy"]
+                df_signal.append("N/A")
 
         elif tickers_signal == "Sell":
             if ohlc_dict["HIGH"][i] > ohlc_dict["CLOSE"][i - 1] + ohlc_dict["ATR"][i - 1]:
                 tickers_signal = ""
-                # ohlc_dict['SIGNAL'] = [""]
+                df_signal.append(tickers_signal)
                 tickers_ret.append(
                     (ohlc_dict["CLOSE"][i - 1] / (ohlc_dict["CLOSE"][i - 1] + ohlc_dict["ATR"][i - 1])) - 1)
             elif ohlc_dict["HIGH"][i] >= ohlc_dict["roll_max_cp"][i] and \
                     ohlc_dict["VOLUME"][i] > 1.5 * ohlc_dict["roll_max_vol"][i - 1]:
                 tickers_signal = "Buy"
-                # ohlc_dict['SIGNAL'] = ["Buy"]
+                df_signal.append(tickers_signal)
                 tickers_ret.append((ohlc_dict["CLOSE"][i - 1] / ohlc_dict["CLOSE"][i]) - 1)
             else:
                 tickers_ret.append((ohlc_dict["CLOSE"][i - 1] / ohlc_dict["CLOSE"][i]) - 1)
-                # ohlc_dict['SIGNAL'] = [""]
+                df_signal.append("N/A")
 
+    ohlc_dict["signal"] = np.array(df_signal)
     ohlc_dict["ret"] = np.array(tickers_ret)
-    print(np.array(ohlc_dict["ret"]))
+   # print(ohlc_dict)
     return ohlc_dict
 
 
