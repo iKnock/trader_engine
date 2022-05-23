@@ -1,16 +1,10 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon May 16 17:45:52 2022
-
-@author: HSelato
-"""
-
 import numpy as np
 import pandas as pd
 import copy
+from stocktrends import Renko
 
 
-def MACD(DF, a=12, b=26, c=9):
+def macd(DF, a=12, b=26, c=9):
     """function to calculate MACD
        typical values a(fast moving average) = 12; 
                       b(slow moving average) =26; 
@@ -23,7 +17,7 @@ def MACD(DF, a=12, b=26, c=9):
     return df.loc[:, ["macd", "signal"]]  # : means all and loc accept the rows and col as param
 
 
-def ATR(DF, n=14):
+def atr(DF, n=14):
     "function to calculate True Range and Average True Range"
     df = DF.copy()
     df["H-L"] = df["HIGH"] - df["LOW"]
@@ -34,7 +28,7 @@ def ATR(DF, n=14):
     return df["ATR"]
 
 
-def Boll_Band(DF, n=14):
+def boll_band(DF, n=14):
     "function to calculate Bollinger Band"
     df = DF.copy()
     df["MB"] = df["CLOSE"].rolling(n).mean()
@@ -44,10 +38,10 @@ def Boll_Band(DF, n=14):
     return df[["MB", "UB", "LB", "BB_Width"]]
 
 
-def ADX(DF, n=20):
+def adx(DF, n=20):
     "function to calculate ADX"
     df = DF.copy()
-    df["ATR"] = ATR(DF, n)  # for the formulas used refer trading view doc
+    df["ATR"] = atr(DF, n)  # for the formulas used refer trading view doc
     df["upmove"] = df["HIGH"] - df["HIGH"].shift(1)
     df["downmove"] = df["LOW"].shift(1) - df["LOW"]
     df["+dm"] = np.where((df["upmove"] > df["downmove"]) & (df["upmove"] > 0), df["upmove"], 0)
@@ -58,7 +52,7 @@ def ADX(DF, n=20):
     return df["ADX"]
 
 
-def RSI(DF, n=14):
+def rsi(DF, n=14):
     "function to calculate RSI"
     df = DF.copy()
     df["change"] = df["CLOSE"] - df["CLOSE"].shift(1)
@@ -71,80 +65,67 @@ def RSI(DF, n=14):
     return df["rsi"]
 
 
-def renko_DF(DF, hourly_df):
+def renko_data(data_f, hourly_df):
     "function to convert ohlc data into renko bricks"
-    df = DF.copy()
-    # df.reset_index(inplace=True)
-    # df.drop("VOLUME",axis=1,inplace=True)#Axis=1 signify Close is a column and inplace=True in this var not a copy
+    df = data_f.copy()
+    df.reset_index(inplace=True)
+    df.drop("VOLUME", axis=1, inplace=True)  # Axis=1 signify Close is a column and inplace=True in this var not a copy
     df.columns = ["date", "open", "high", "low", "close"]
-    #df2 = Renko(df)
+    df2 = Renko(df)
     # df2.brick_size = 3*round(self.ATR(hourly_df,120).iloc[-1],0)#iloc[-1] give the last value
-    #df2.brick_size = 4
-    #renko_df = df2.get_ohlc_data()  # if using older version of the library please use get_bricks() instead
-    #return renko_df
+    df2.brick_size = 4
+    renko_df = df2.get_ohlc_data()  # if using older version of the library please use get_bricks() instead
+    return renko_df
 
 
-def CALC_APPEND_MACD(DF):
+def calc_append_macd(DF):
     df = DF.copy()
-    macd = pd.DataFrame(MACD(df))
-    df = df.assign(MACD=pd.Series(macd["macd"]).values, Signal=pd.Series(macd["signal"]).values)
+    df_macd = pd.DataFrame(macd(df))
+    df = df.assign(MACD=pd.Series(df_macd["macd"]).values, Signal=pd.Series(df_macd["signal"]).values)
     return df
 
 
-def CALC_APPEND_ATR(DF, n=14):
+def calc_append_atr(DF, n=14):
     df = DF.copy()
-    atr = pd.DataFrame(ATR(df, n))
-    df = df.assign(ATR=pd.Series(atr['ATR']).values)
+    df_atr = pd.DataFrame(atr(df, n))
+    df = df.assign(ATR=pd.Series(df_atr['ATR']).values)
     return df
 
 
-def CALC_APPEND_BB(DF):
+def calc_append_bb(DF):
     df = DF.copy()
-    boll_band = pd.DataFrame(Boll_Band(df))
-    df = df.assign(MB=pd.Series(boll_band['MB']).values,
-                   UB=pd.Series(boll_band['UB']).values,
-                   LB=pd.Series(boll_band['LB']).values,
-                   BB_Width=pd.Series(boll_band['BB_Width']).values)
+    df_boll_band = pd.DataFrame(boll_band(df))
+    df = df.assign(MB=pd.Series(df_boll_band['MB']).values,
+                   UB=pd.Series(df_boll_band['UB']).values,
+                   LB=pd.Series(df_boll_band['LB']).values,
+                   BB_Width=pd.Series(df_boll_band['BB_Width']).values)
     return df
 
 
-def CALC_APPEND_ADX(DF):
+def calc_append_adx(DF):
     df = DF.copy()
-    adx = pd.DataFrame(ADX(df))
-    df = df.assign(ADX=pd.Series(adx['ADX']).values)
+    df_adx = pd.DataFrame(adx(df))
+    df = df.assign(ADX=pd.Series(df_adx['ADX']).values)
     return df
 
 
-def CALC_APPEND_RSI(DF):
+def calc_append_rsi(DF):
     df = DF.copy()
-    rsi = pd.DataFrame(RSI(df))
-    df = df.assign(RSI=pd.Series(rsi['rsi']).values)
+    df_rsi = pd.DataFrame(rsi(df))
+    df = df.assign(RSI=pd.Series(df_rsi['rsi']).values)
     return df
-
-
-def CALC_APPEND_RENKO(DF, binance_btc_ohlcv):
-    df = DF.copy()
-    rendo_data = pd.DataFrame(
-        renko_DF(df, binance_btc_ohlcv)
-    )
-    return rendo_data
 
 
 def calc_and_add_indicators(DF):
     df = copy.deepcopy(DF)
-    df = CALC_APPEND_MACD(df)
-    df = CALC_APPEND_ATR(df)
-    df = CALC_APPEND_BB(df)
-    df = CALC_APPEND_ADX(df)
-    df = CALC_APPEND_RSI(df)
+    df = calc_append_macd(df)
+    df = calc_append_atr(df)
+    df = calc_append_bb(df)
+    df = calc_append_adx(df)
+    df = calc_append_rsi(df)
 
     df["roll_max_cp"] = df["HIGH"].rolling(20).max()
     df["roll_min_cp"] = df["LOW"].rolling(20).min()
     df["roll_max_vol"] = df["VOLUME"].rolling(20).max()
 
-    #df['five_minute_ret'] = sp.RETURN_FOR_PERIOD(df, "five_minute")
-
-   # df['CAGR'] = sp.CAGR(df)
-   # df['sharpe'] = sp.sharpe(df, 0.03)
-   # df['sortino'] = sp.sortino(df, 0.03)
     return df

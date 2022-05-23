@@ -1,7 +1,8 @@
-import DataminingEngine.read_candles as rd
+import datamining_engine.read_candles_ccxt as rd
 import utility.constants as const
 import utility.util as util
-import DataminingEngine.ccxt_wrapper as ccxt_wrapper
+import config.ccxt_wrapper as ccxt_wrapper
+import pandas as pd
 
 
 def read_latest_candles():
@@ -31,6 +32,19 @@ def fetch_candles(exchange, since, append):
                    since,
                    util.calc_limit(since),
                    append)
+
+
+def get_order_book(excnge, ticker):
+    orderbook_binance_btc_usdt = excnge.fetch_order_book(ticker)
+
+    bids_binance = orderbook_binance_btc_usdt['bids']
+    asks_binanace = orderbook_binance_btc_usdt['asks']
+
+    df_bid_binance = pd.DataFrame(bids_binance, columns=['price', 'qty'])
+    df_ask_binance = pd.DataFrame(asks_binanace, columns=['price', 'qty'])
+
+    ticker_order_book = {'bid_binance': df_bid_binance, 'ask_binance': df_ask_binance}
+    return ticker_order_book
 
 
 if __name__ == '__main__':

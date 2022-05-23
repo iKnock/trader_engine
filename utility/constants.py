@@ -1,16 +1,11 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri May 20 00:02:28 2022
-
-@author: HSelato
-"""
+host = 'http://localhost:9000'
 
 file_name = 'BTC_euro_5m_test.csv'
 exchange = 'binance'
 max_retries = 3
 symbol = 'BTC/EUR'
 candle_size = '5m'
-since = '2022-05-20 15:15:00'
+since = '2022-05-22 12:57:00'
 limit = 1
 
 min_in_day = 1440

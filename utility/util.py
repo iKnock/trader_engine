@@ -42,10 +42,15 @@ def format_candle_data(df):
     df_candle.columns = ["TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"]
 
     df_candle = df_candle.set_index('TIMESTAMP')
-    df_candle['DATE'] = pd.to_datetime(df_candle.index, utc=True, unit='ms').tz_convert('europe/rome')
-    #df_candle['DATE'] = pd.to_datetime(df_candle.tail(1).values[0, 0], unit='ms')
+    df_candle['DATE'] = pd.to_datetime(df_candle.index, utc=True, unit='ms')
     df_candle = df_candle.set_index('DATE')
     return df_candle
+
+
+def convert_df_timezone(data_frame):
+    df = data_frame.copy()
+    df['DATE'] = pd.to_datetime(df.index, utc=True, unit='ms').tz_convert('europe/rome')
+    return df.set_index('DATE')
 
 
 def run_query(host, sql_query):
@@ -60,11 +65,9 @@ def run_query(host, sql_query):
 
 
 def calc_limit(since):
-    now = dt.utcnow()  #
-    # since = '2022-05-20 15:15:00'
-
+    now = dt.utcnow()  # is on utc 00 timezone
     since_date = dt.strptime(since, '%Y-%m-%d %H:%M:%S')  # is on utc 00 timezone
-    #    print(since_date.tzinfo)
+
     duration = now - since_date
 
     seconds_in_day = 24 * 60 * 60
@@ -79,5 +82,5 @@ def calc_limit(since):
         limit = int(diff[0] / can_s)
         print("==========limit==========")
         print(limit)
-    #else convert unit of diff[0] to candle_unit
+    # else convert unit of diff[0] to candle_unit
     return limit
