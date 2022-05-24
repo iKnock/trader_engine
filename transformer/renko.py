@@ -2,6 +2,9 @@ import numpy as np
 from stocktrends import Renko
 import statsmodels.api as sm
 import transformer.indicators as indicator
+import pandas as pd
+
+pd.options.mode.chained_assignment = None  # default='warn'
 
 
 def renko_data(data_f, brick_siz=4):

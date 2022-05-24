@@ -1,10 +1,6 @@
 import numpy as np
-import transformer.indicators as indicator
 import copy
-import pandas as pd
 import transformer.renko as rnk
-
-pd.options.mode.chained_assignment = None  # default='warn'
 
 
 def obv(data_fr):
