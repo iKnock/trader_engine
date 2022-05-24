@@ -7,6 +7,7 @@ import utility.visualization_util as vis
 import strategy.breackout as br_out
 import strategy.renko_obv as renko_obv
 import transformer.indicators as indicator
+import numpy as np
 
 
 def run():
@@ -23,7 +24,7 @@ def run():
 if __name__ == '__main__':
     df_ind = run()
 
-    break_df = br_out.breakout(df_ind)
+    #break_df = br_out.breakout(df_ind)
     ren_obv = renko_obv.run(df_ind.iloc[:, [0, 1, 2, 3, 4]])
 
     # to_plot = [renko_data['high'], renko_data['low'], renko_data['close'], renko_data['uptrend']]

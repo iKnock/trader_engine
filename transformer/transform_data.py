@@ -1,4 +1,5 @@
 import transformer.indicators as indicators
+import transformer.renko as rnk
 import extract_and_load.load_data as ld
 import utility.constants as const
 import utility.util as util
@@ -14,7 +15,7 @@ def cal_indicators(data_f):
 
 def generate_renko(data_f):
     df = data_f.copy()
-    return indicators.renko_data(df, "hourlydf")
+    return rnk.renko_data(df, 5)
 
 
 if __name__ == '__main__':

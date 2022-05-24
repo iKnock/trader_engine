@@ -1,8 +1,6 @@
 import numpy as np
 import pandas as pd
 import copy
-from stocktrends import Renko
-import statsmodels.api as sm
 
 
 def macd(data_f, a=12, b=26, c=9):
@@ -64,35 +62,6 @@ def rsi(data_f, n=14):
     df["rs"] = df["avgGain"] / df["avgLoss"]
     df["rsi"] = 100 - (100 / (1 + df["rs"]))
     return df["rsi"]
-
-
-def renko_data(data_f, brick_siz=4):
-    "function to convert ohlc data into renko bricks"
-    df = data_f.copy()
-    df.reset_index(inplace=True)
-    df.drop("VOLUME", axis=1, inplace=True)  # Axis=1 signify Close is a column and inplace=True in this var not a copy
-    df.columns = ["date", "open", "high", "low", "close"]
-    df2 = Renko(df)
-    # df2.brick_size = 3*round(self.ATR(hourly_df,120).iloc[-1],0)#iloc[-1] give the last value
-    df2.brick_size = brick_siz
-    renko_df = df2.get_ohlc_data()  # if using older version of the library please use get_bricks() instead
-    return renko_df
-
-
-def slope(ser, n):
-    "function to calculate the slope of n consecutive points on a plot(on a carti. plain)"
-    slopes = [i * 0 for i in range(n - 1)]
-    for i in range(n, len(ser) + 1):
-        y = ser[i - n:i]
-        x = np.array(range(n))
-        y_scaled = (y - y.min()) / (y.max() - y.min())
-        x_scaled = (x - x.min()) / (x.max() - x.min())
-        x_scaled = sm.add_constant(x_scaled)
-        model = sm.OLS(y_scaled, x_scaled)
-        results = model.fit()
-        slopes.append(results.params[-1])
-    slope_angle = (np.rad2deg(np.arctan(np.array(slopes))))
-    return np.array(slope_angle)
 
 
 def calc_append_macd(DF):
