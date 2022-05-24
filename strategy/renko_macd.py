@@ -98,3 +98,8 @@ def main():
     now_str = dt.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     df = ld.filter_df_by_interval(df, const.since, now_str)
     renko_macd = run(df)
+    print(renko_macd)
+
+
+if __name__ == '__main__':
+    main()
