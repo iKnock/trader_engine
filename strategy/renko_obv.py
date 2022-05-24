@@ -1,6 +1,9 @@
 import numpy as np
 import copy
 import transformer.renko as rnk
+import extract_and_load.load_data as ld
+from datetime import datetime as dt, timezone as tz, timedelta as td
+import utility.constants as const
 
 
 def obv(data_fr):
@@ -30,7 +33,7 @@ def merge_dfs(df_intra_day):
 
 def identify_signal_return(df_intra, ohlc_renko):
     """Identifying signals and calculating daily return"""
-    print("calculating daily returns for ")
+    print("calculating daily returns and signals using renko obv ")
     ohlc_intraday = copy.deepcopy(df_intra)
 
     tickers_signal = ""
@@ -81,7 +84,14 @@ def identify_signal_return(df_intra, ohlc_renko):
     return ohlc_renko
 
 
-def run(df):
+def run():
+    df = ld.load_data()
+    now_str = dt.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+    df = ld.filter_df_by_interval(df, const.since, now_str)
     candle_with_renko = merge_dfs(df)
     ren_obv = identify_signal_return(df, candle_with_renko)
     return ren_obv
+
+
+if __name__ == '__main__':
+    print(run())
