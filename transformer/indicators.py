@@ -2,14 +2,15 @@ import numpy as np
 import pandas as pd
 import copy
 from stocktrends import Renko
+import statsmodels.api as sm
 
 
-def macd(DF, a=12, b=26, c=9):
+def macd(data_f, a=12, b=26, c=9):
     """function to calculate MACD
        typical values a(fast moving average) = 12; 
                       b(slow moving average) =26; 
                       c(signal line ma window) =9"""
-    df = DF.copy()
+    df = data_f.copy()
     df["ma_fast"] = df["CLOSE"].ewm(span=a, min_periods=a).mean()
     df["ma_slow"] = df["CLOSE"].ewm(span=b, min_periods=b).mean()
     df["macd"] = df["ma_fast"] - df["ma_slow"]
@@ -17,9 +18,9 @@ def macd(DF, a=12, b=26, c=9):
     return df.loc[:, ["macd", "signal"]]  # : means all and loc accept the rows and col as param
 
 
-def atr(DF, n=20):
+def atr(data_f, n=20):
     "function to calculate True Range and Average True Range"
-    df = DF.copy()
+    df = data_f.copy()
     df["H-L"] = df["HIGH"] - df["LOW"]
     df["H-PC"] = abs(df["HIGH"] - df["CLOSE"].shift(1))
     df["L-PC"] = abs(df["LOW"] - df["CLOSE"].shift(1))
@@ -28,9 +29,9 @@ def atr(DF, n=20):
     return df["ATR"]
 
 
-def boll_band(DF, n=14):
+def boll_band(data_f, n=14):
     "function to calculate Bollinger Band"
-    df = DF.copy()
+    df = data_f.copy()
     df["MB"] = df["CLOSE"].rolling(n).mean()
     df["UB"] = df["MB"] + 2 * df["CLOSE"].rolling(n).std(ddof=0)  # ddof is the degree of freedom
     df["LB"] = df["MB"] - 2 * df["CLOSE"].rolling(n).std(ddof=0)
@@ -38,10 +39,10 @@ def boll_band(DF, n=14):
     return df[["MB", "UB", "LB", "BB_Width"]]
 
 
-def adx(DF, n=20):
+def adx(data_f, n=20):
     "function to calculate ADX"
-    df = DF.copy()
-    df["ATR"] = atr(DF, n)  # for the formulas used refer trading view doc
+    df = data_f.copy()
+    df["ATR"] = atr(data_f, n)  # for the formulas used refer trading view doc
     df["upmove"] = df["HIGH"] - df["HIGH"].shift(1)
     df["downmove"] = df["LOW"].shift(1) - df["LOW"]
     df["+dm"] = np.where((df["upmove"] > df["downmove"]) & (df["upmove"] > 0), df["upmove"], 0)
@@ -52,9 +53,9 @@ def adx(DF, n=20):
     return df["ADX"]
 
 
-def rsi(DF, n=14):
+def rsi(data_f, n=14):
     "function to calculate RSI"
-    df = DF.copy()
+    df = data_f.copy()
     df["change"] = df["CLOSE"] - df["CLOSE"].shift(1)
     df["gain"] = np.where(df["change"] >= 0, df["change"], 0)  # numpy .where is like if else
     df["loss"] = np.where(df["change"] < 0, -1 * df["change"], 0)
@@ -65,7 +66,7 @@ def rsi(DF, n=14):
     return df["rsi"]
 
 
-def renko_data(data_f, hourly_df):
+def renko_data(data_f, brick_siz=4):
     "function to convert ohlc data into renko bricks"
     df = data_f.copy()
     df.reset_index(inplace=True)
@@ -73,9 +74,25 @@ def renko_data(data_f, hourly_df):
     df.columns = ["date", "open", "high", "low", "close"]
     df2 = Renko(df)
     # df2.brick_size = 3*round(self.ATR(hourly_df,120).iloc[-1],0)#iloc[-1] give the last value
-    df2.brick_size = 4
+    df2.brick_size = brick_siz
     renko_df = df2.get_ohlc_data()  # if using older version of the library please use get_bricks() instead
     return renko_df
+
+
+def slope(ser, n):
+    "function to calculate the slope of n consecutive points on a plot(on a carti. plain)"
+    slopes = [i * 0 for i in range(n - 1)]
+    for i in range(n, len(ser) + 1):
+        y = ser[i - n:i]
+        x = np.array(range(n))
+        y_scaled = (y - y.min()) / (y.max() - y.min())
+        x_scaled = (x - x.min()) / (x.max() - x.min())
+        x_scaled = sm.add_constant(x_scaled)
+        model = sm.OLS(y_scaled, x_scaled)
+        results = model.fit()
+        slopes.append(results.params[-1])
+    slope_angle = (np.rad2deg(np.arctan(np.array(slopes))))
+    return np.array(slope_angle)
 
 
 def calc_append_macd(DF):
