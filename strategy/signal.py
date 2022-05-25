@@ -1,10 +1,10 @@
+import numpy as np
 import copy
 import strategy.renko_macd as rnk_macd
 import extract_and_load.load_data as ld
 from datetime import datetime as dt, timezone as tz, timedelta as td
 import utility.constants as const
 import transformer.transform_data as transf_data
-import numpy as np
 
 
 def trade_signal(candle_renko_merged_df, l_s):
@@ -67,3 +67,7 @@ def main():
     mrg_renko = rnk_macd.merge_dfs(df_with_indicators)
     trade_sign = trade_signal(mrg_renko, "")
     print(trade_sign)
+
+
+if __name__ == '__main__':
+    main()

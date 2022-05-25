@@ -56,7 +56,7 @@ def identify_signal_return_renko_macd(data_fr, ohlc_renko):
                 if ohlc_renko["bar_num"][i] <= -2 and ohlc_renko["macd"][i] < \
                         ohlc_renko["macd_sig"][i] and ohlc_renko["macd_slope"][i] < \
                         ohlc_renko["macd_sig_slope"][i]:
-                    tickers_signal = "Sell"
+                    tickers_signal = "Sell"#Close_sell
                 elif ohlc_renko["macd"][i] < ohlc_renko["macd_sig"][i] and \
                         ohlc_renko["macd_slope"][i] < ohlc_renko["macd_sig_slope"][i]:
                     tickers_signal = ""
