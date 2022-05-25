@@ -6,6 +6,7 @@ from datetime import datetime as dt, timezone as tz, timedelta as td
 import utility.visualization_util as vis
 import strategy.breackout as br_out
 import strategy.renko_obv as renko_obv
+import strategy.renko_macd as renko_macd
 import transformer.indicators as indicator
 import numpy as np
 
@@ -24,8 +25,21 @@ def run():
 if __name__ == '__main__':
     df_ind = run()
 
-    #break_df = br_out.breakout(df_ind)
-    ren_obv = renko_obv.run(df_ind.iloc[:, [0, 1, 2, 3, 4]])
+    break_df = br_out.breakout(df_ind)
+    ren_obv = renko_obv.run(df_ind)
+    renk_macd = renko_macd.run(df_ind)
+
+    # calculating overall strategy's KPIs
+    # strategy_df = pd.DataFrame()
+    # for ticker in tickers:
+    #     strategy_df[ticker] = ohlc_renko[ticker]["ret"]
+    # strategy_df["ret"] = strategy_df.mean(axis=1)
+    # CAGR(strategy_df)
+    # sharpe(strategy_df, 0.025)
+    # max_dd(strategy_df)
+    #
+    # # visualizing strategy returns
+    # (1 + strategy_df["ret"]).cumprod().plot()
 
     # to_plot = [renko_data['high'], renko_data['low'], renko_data['close'], renko_data['uptrend']]
     # vis.plot_data_many(to_plot, 'BTC/EUR Closing price 24 hours, 5Min',

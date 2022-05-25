@@ -84,7 +84,15 @@ def identify_signal_return(df_intra, ohlc_renko):
     return ohlc_renko
 
 
-def run():
+def run(d_frame):
+    df = d_frame.copy()
+
+    candle_with_renko = merge_dfs(df)
+    ren_obv = identify_signal_return(df, candle_with_renko)
+    return ren_obv
+
+
+def main():
     df = ld.load_data()
     now_str = dt.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     df = ld.filter_df_by_interval(df, const.since, now_str)
@@ -94,4 +102,4 @@ def run():
 
 
 if __name__ == '__main__':
-    print(run())
+    print(main())

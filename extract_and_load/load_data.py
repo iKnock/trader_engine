@@ -5,11 +5,14 @@ from datetime import datetime as dt, timezone as tz, timedelta as td
 
 
 def load_data():
-    json = util.run_query(const.host, "SELECT * from " + "'" + const.file_name + "'")
-    dff = util.format_candle_data(pd.DataFrame(json.get("dataset")))
-    dff.drop_duplicates(inplace=True)
-    dff = dff.sort_index(axis=0, ascending=True, na_position='last')
-    return dff
+    try:
+        json = util.run_query(const.host, "SELECT * from " + "'" + const.file_name + "'")
+        dff = util.format_candle_data(pd.DataFrame(json.get("dataset")))
+        dff.drop_duplicates(inplace=True)
+        dff = dff.sort_index(axis=0, ascending=True, na_position='last')
+        return dff
+    except Exception:
+        raise "Extract data first"
 
 
 def since_from_duration(duration, unit):
