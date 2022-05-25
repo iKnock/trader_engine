@@ -12,7 +12,7 @@ def breakout(data_f):
 
     tickers_ret = [0]
     tickers_signal = ""
-    df_signal = [0]
+    df_signal = ['N/A']
 
     print("calculating returns******************* ")
     for i in range(1, len(ohlc_dict)):
@@ -35,7 +35,7 @@ def breakout(data_f):
             if ohlc_dict["LOW"][i] < ohlc_dict["CLOSE"][i - 1] - ohlc_dict["ATR"][i - 1]:
                 tickers_signal = ""
                 df_signal.append(
-                    "Sell/Stop Loss")  # selling price will be ohlc_dict["CLOSE"][i - 1] - ohlc_dict["ATR"][i - 1]
+                    "Sell/Stop Loss/Stop long")  # selling price will be ohlc_dict["CLOSE"][i - 1] - ohlc_dict["ATR"][i - 1]
                 tickers_ret.append(
                     ((ohlc_dict["CLOSE"][i - 1] - ohlc_dict["ATR"][i - 1]) / ohlc_dict["CLOSE"][i - 1]) - 1)
             elif ohlc_dict["LOW"][i] <= ohlc_dict["roll_min_cp"][i] and \

@@ -11,22 +11,12 @@ import transformer.indicators as indicator
 import numpy as np
 import pandas as pd
 import performance_evaluation.performace_kpi as kpi
+import strategy.signal as sgl
 
 
-def run():
-    df = ld.load_data()
-
-    now_str = dt.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-    df_filtered = ld.filter_df_by_interval(df, const.since, now_str)
-    df_filtered = util.convert_df_timezone(df_filtered)
-
-    df_with_indicators = trans_data.cal_indicators(df_filtered)
-    return df_with_indicators
-
-
-def measure_performance(df):
+def measure_performance(d_frame):
     # calculating overall strategy's KPIs
-    data_f = df.copy()
+    data_f = d_frame.copy()
     data_f["ret_mean"] = data_f["ret"].mean()
 
     performance = pd.DataFrame()
@@ -63,6 +53,9 @@ if __name__ == '__main__':
     ren_obv = renko_obv.run(df_with_indicators)
     renk_macd = renko_macd.run(df_with_indicators)
 
+    renko_merge_with_candle = renko_macd.merge_dfs(df_with_indicators)
+    signl = sgl.trade_signal(renko_merge_with_candle, "")
+
     # generate kpi report
     kpi_report = measure_performance(renk_macd)
 
@@ -73,7 +66,4 @@ if __name__ == '__main__':
 
     vis.plot_data(break_df['ret'], 'BTC/EUR Closing price 24 hours', '5Min', 'Time', 'Price')
 
-# to_plot = [renko_data['high'], renko_data['low'], renko_data['close'], renko_data['uptrend']]
-# vis.plot_data_many(to_plot, 'BTC/EUR Closing price 24 hours, 5Min',
-#                   'Time', 'Price', 'Bou Band')
-print(ren_obv)
+    print(break_df)
