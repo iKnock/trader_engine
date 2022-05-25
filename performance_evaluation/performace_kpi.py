@@ -3,16 +3,20 @@ import pandas as pd
 import copy
 
 
-def CAGR(DF):
+def CAGR(data_f_with_ret, ret="ret"):
     """function to calculate the Cumulative Annual Growth Rate of a trading
     strategy(bought stock) for a certain period of time"""
 
-    df = copy.deepcopy(DF)
-    df["return"] = DF["CLOSE"].pct_change()
-    df["cum_return"] = (1 + df["return"]).cumprod()
-    n = len(
-        df) / 252  # the num 252 signify the total number of trading days in a year and for intraday data you need to further divide by num of trading hour per day
-    CAGR = (df["cum_return"]) ** (1 / n) - 1  # means cum_return the power of 1/n -1
+    df = copy.deepcopy(data_f_with_ret)
+
+    df["cum_return"] = (1 + df[ret]).cumprod()
+    n = len(df) / (252 * 78)
+    CAGR = (df["cum_return"].tolist()[-1]) ** (1 / n) - 1
+
+    # df["return"] = df[ret].pct_change()
+    # df["cum_return"] = (1 + df["return"]).cumprod()
+    # n = len(df) / 252*78  # the num 252 signify the total number of trading days in a year and for intraday data you need to further divide by num of trading hour per day
+    # CAGR = (df["cum_return"]) ** (1 / n) - 1  # means cum_return the power of 1/n -1
     return CAGR
 
 
@@ -20,7 +24,7 @@ def volatility(DF):
     "function to calculate annualized volatility of a trading strategy"
     df = copy.deepcopy(DF)
     df["return"] = df["CLOSE"].pct_change()
-    vol = df["return"].std() * np.sqrt(252)
+    vol = df["return"].std() * np.sqrt(252*78)
     return vol
 
 
