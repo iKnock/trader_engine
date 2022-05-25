@@ -62,7 +62,9 @@ def main():
 
     ohlc_df = stochastic(df, 14, 3, 3)
     ohlc_df = sma(ohlc_df, 100, 200)
+
     signal = trade_signal(ohlc_df)
+
     if signal == "Buy":
         # market_order(currency, pos_size, 3 * ATR(data, 120))
         print("New long position initiated ")
