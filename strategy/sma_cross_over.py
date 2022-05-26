@@ -28,17 +28,18 @@ def sma(df, a, b):
 def trade_signal(df):
     "function to generate signal"
     global upward_sma_dir, dnward_sma_dir
-    signal = ""
-    if df['sma_fast'][-1] > df['sma_slow'][-1] and df['sma_fast'][-2] < df['sma_slow'][-2]:
-        upward_sma_dir = True
-        dnward_sma_dir = False
-    if df['sma_fast'][-1] < df['sma_slow'][-1] and df['sma_fast'][-2] > df['sma_slow'][-2]:
-        upward_sma_dir = False
-        dnward_sma_dir = True
-    if upward_sma_dir == True and min(df['K'][-1], df['D'][-1]) > 25 and max(df['K'][-2], df['D'][-2]) < 25:
-        signal = "Buy"
-    if dnward_sma_dir == True and min(df['K'][-1], df['D'][-1]) < 75 and max(df['K'][-2], df['D'][-2]) > 75:
-        signal = "Sell"
+    for i in range(len(df)):
+        signal = ""
+        if df[i]['sma_fast'][-1] > df[i]['sma_slow'][-1] and df[i]['sma_fast'][-2] < df[i]['sma_slow'][-2]:
+            upward_sma_dir = True
+            dnward_sma_dir = False
+        if df[i]['sma_fast'][-1] < df[i]['sma_slow'][-1] and df[i]['sma_fast'][-2] > df[i]['sma_slow'][-2]:
+            upward_sma_dir = False
+            dnward_sma_dir = True
+        if upward_sma_dir == True and min(df['K'][-1], df['D'][-1]) > 25 and max(df['K'][-2], df['D'][-2]) < 25:
+            signal = "Buy"
+        if dnward_sma_dir == True and min(df['K'][-1], df['D'][-1]) < 75 and max(df['K'][-2], df['D'][-2]) > 75:
+            signal = "Sell"
 
     plt.subplot(211)
     plt.plot(df.iloc[-50:, [3, -2, -1]])
