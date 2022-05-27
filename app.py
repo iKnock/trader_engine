@@ -54,7 +54,7 @@ if __name__ == '__main__':
     # renk_macd = renko_macd.run(df_with_indicators)
 
     renko_merge_with_candle = renko_macd.merge_dfs(df_with_indicators)
-    signl = sgl.trade_signal(renko_merge_with_candle, "")
+    signl = sgl.trade_signall(renko_merge_with_candle, "")
 
     # generate kpi report
     # kpi_report = measure_performance(renk_macd)
