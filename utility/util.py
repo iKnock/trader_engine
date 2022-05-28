@@ -65,15 +65,14 @@ def calc_limit(since):
 
     seconds_in_day = 24 * 60 * 60
     diff = divmod(duration.days * seconds_in_day + duration.seconds, 60)
-    #(0, 8)
     limit = None
     can_s = const.candle_size
     print(type(can_s))
     can_s = int(can_s[:-1])
     can_s = int(can_s)
-    if const.candle_unit == "minute":
+    if const.candle_unit == "min":
         limit = int(diff[0] / can_s)
-    elif const.candle_unit == 'hour':
+    elif const.candle_unit == 'hr':
         limit = int(diff[0]/60)/can_s
     # else convert unit of diff[0] to candle_unit
 
