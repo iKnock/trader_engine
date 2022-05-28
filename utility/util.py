@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu May 19 23:55:03 2022
-
-@author: HSelato
-"""
-
 from pathlib import Path
 import pandas as pd
 from datetime import datetime as dt, timezone as tz
@@ -65,14 +58,14 @@ def run_query(host, sql_query):
 
 
 def calc_limit(since):
-    now = dt.utcnow()  # is on utc 00 timezone
-    since_date = dt.strptime(since, '%Y-%m-%d %H:%M:%S')  # is on utc 00 timezone
+    now = dt.now()# is on utc 00 timezone
+    since_date = dt.strptime(since, '%Y-%m-%d %H:%M:%S')  # is on utc +2 timezone
 
     duration = now - since_date
 
     seconds_in_day = 24 * 60 * 60
     diff = divmod(duration.days * seconds_in_day + duration.seconds, 60)
-    (0, 8)
+    #(0, 8)
     limit = None
     can_s = const.candle_size
     print(type(can_s))
@@ -80,7 +73,10 @@ def calc_limit(since):
     can_s = int(can_s)
     if const.candle_unit == "minute":
         limit = int(diff[0] / can_s)
-        print("==========limit==========")
-        print(limit)
+    elif const.candle_unit == 'hour':
+        limit = int(diff[0]/60)/can_s
     # else convert unit of diff[0] to candle_unit
+
+    print("==========limit==========")
+    print(limit)
     return limit

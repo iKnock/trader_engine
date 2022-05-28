@@ -7,7 +7,7 @@ import utility.constants as const
 import transformer.transform_data as transf_data
 
 
-def trade_signal(candle_renko_merged_df, l_s):
+def data_signal(candle_renko_merged_df, l_s):
     "function to generate signal"
     signal = ""
     df = copy.deepcopy(candle_renko_merged_df)
@@ -56,7 +56,7 @@ def trade_signal(candle_renko_merged_df, l_s):
     return df
 
 
-def trade_signall(candle_renko_merged_df, l_s):
+def trade_signal(candle_renko_merged_df, l_s):
     "function to generate signal"
     tickers_signal = ""
     df = copy.deepcopy(candle_renko_merged_df)
@@ -121,7 +121,7 @@ def main():
     df_with_indicators = transf_data.cal_indicators(df)
 
     mrg_renko = rnk_macd.merge_dfs(df_with_indicators)
-    trade_sign = trade_signall(mrg_renko, "")
+    trade_sign = trade_signal(mrg_renko, "")
     print(trade_sign)
 
 

@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu May 19 15:36:25 2022
-
-@author: HSelato
-"""
-
 import os
 from pathlib import Path
 import sys
@@ -33,30 +26,73 @@ def retry_fetch_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
 
 
 def scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
-    earliest_timestamp = exchange.milliseconds()
+    now = exchange.milliseconds()
+    opti_limit = 1000
+    min_in_day = 1440
+
+    if const
+
+
     timeframe_duration_in_seconds = exchange.parse_timeframe(timeframe)
     timeframe_duration_in_ms = timeframe_duration_in_seconds * 1000
     timedelta = limit * timeframe_duration_in_ms
     all_ohlcv = []
+
+    duration = exchange.parse_timeframe(timeframe)
+    end_time = sum(since, limit * duration * 1000 - 1)
+    now = exchange.milliseconds()
     while True:
         fetch_since = earliest_timestamp - timedelta
         # dt.datetime.fromtimestamp(fetch_since / 1e3) to see fetch_since in date format
-        ohlcv = retry_fetch_ohlcv(exchange, max_retries, symbol, timeframe, fetch_since, limit)
-        if len(ohlcv) > 0:
+        ohlcv = retry_fetch_ohlcv(exchange, max_ret00ries, symbol, timeframe, fetch_since, limit)
+        if len(ohlcv) > 0 and since > 0:
+
+            fetch_since = min(now, end_time)
+
+
             # if we have reached the beginning of history
-            if ohlcv[0][0] >= earliest_timestamp:
-                break
-            earliest_timestamp = ohlcv[0][0]
-            all_ohlcv = ohlcv + all_ohlcv
-            print(len(all_ohlcv), symbol, 'candles in total from', exchange.iso8601(all_ohlcv[0][0]), 'to',
-                  exchange.iso8601(all_ohlcv[-1][0]))
-            # if we have reached the checkpoint
-            if fetch_since < since:
-                break
-        else:
-            print(symbol + ' has no market data ')
-            return all_ohlcv
-    return all_ohlcv
+        if ohlcv[0][0] >= earliest_timestamp:
+            break
+        earliest_timestamp = ohlcv[0][0]
+        all_ohlcv = ohlcv + all_ohlcv
+        print(len(all_ohlcv), symbol, 'candles in total from', exchange.iso8601(all_ohlcv[0][0]), 'to',
+              exchange.iso8601(all_ohlcv[-1][0]))
+        # if we have reached the checkpoint
+        if fetch_since < since:
+            break
+    else:
+        print(symbol + ' has no market data ')
+        return all_ohlcv
+
+
+return all_ohlcv
+
+
+# def scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
+#     earliest_timestamp = exchange.milliseconds()
+#     timeframe_duration_in_seconds = exchange.parse_timeframe(timeframe)
+#     timeframe_duration_in_ms = timeframe_duration_in_seconds * 1000
+#     timedelta = limit * timeframe_duration_in_ms
+#     all_ohlcv = []
+#     while True:
+#         fetch_since = earliest_timestamp - timedelta
+#         # dt.datetime.fromtimestamp(fetch_since / 1e3) to see fetch_since in date format
+#         ohlcv = retry_fetch_ohlcv(exchange, max_retries, symbol, timeframe, fetch_since, limit)
+#         if len(ohlcv) > 0:
+#             # if we have reached the beginning of history
+#             if ohlcv[0][0] >= earliest_timestamp:
+#                 break
+#             earliest_timestamp = ohlcv[0][0]
+#             all_ohlcv = ohlcv + all_ohlcv
+#             print(len(all_ohlcv), symbol, 'candles in total from', exchange.iso8601(all_ohlcv[0][0]), 'to',
+#                   exchange.iso8601(all_ohlcv[-1][0]))
+#             # if we have reached the checkpoint
+#             if fetch_since < since:
+#                 break
+#         else:
+#             print(symbol + ' has no market data ')
+#             return all_ohlcv
+#     return all_ohlcv
 
 
 def write_to_csv(filename, exchange, data, symbol, append):

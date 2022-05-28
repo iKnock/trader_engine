@@ -35,7 +35,7 @@ def draw_chart(series_to_plot):
     (1 + series_to_plot).cumprod().plot()
 
 
-if __name__ == '__main__':
+def execute_analysis_engine():
     # load data
     df = ld.load_data()
 
@@ -55,18 +55,23 @@ if __name__ == '__main__':
     renk_macd = renko_macd.run(df_with_indicators)
 
     renko_merge_with_candle = renko_macd.merge_dfs(df_with_indicators)
-    signl = sgl.trade_signall(renko_merge_with_candle, "")
+    sign = sgl.trade_signal(renko_merge_with_candle, "")
+    print(sign)
 
     sma_df = sma.run(df_filtered)
+    print(sma_df)
 
     # generate kpi report
-    # kpi_report = measure_performance(renk_macd)
+    kpi_report = measure_performance(renk_macd)
+    print(kpi_report)
 
     # plot strategy return
     draw_chart(break_df['ret'])
     draw_chart(ren_obv['ret'])
     draw_chart(renk_macd['ret'])
 
-    #   vis.plot_data(break_df['ret'], 'BTC/EUR Closing price 24 hours', '5Min', 'Time', 'Price')
+    # vis.plot_data(break_df['ret'], 'BTC/EUR Closing price 24 hours', '5Min', 'Time', 'Price')
 
-    print(signl)
+
+if __name__ == '__main__':
+    execute_analysis_engine()
