@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 import performance_evaluation.performace_kpi as kpi
 import strategy.signal as sgl
+import strategy.sma_cross_over as sma
 
 
 def measure_performance(d_frame):
@@ -43,26 +44,28 @@ if __name__ == '__main__':
     df_filtered = ld.filter_df_by_interval(df, const.since, now_str)
 
     # convert df timezone
-    #df_filtered = util.convert_df_timezone(df_filtered)
+    df_filtered = util.convert_df_timezone(df_filtered)
 
     # add indicators
     df_with_indicators = trans_data.cal_indicators(df_filtered)
 
     # apply strategy
-    #  break_df = br_out.breakout(df_with_indicators)
-    # ren_obv = renko_obv.run(df_with_indicators)
-    # renk_macd = renko_macd.run(df_with_indicators)
+    break_df = br_out.breakout(df_with_indicators)
+    ren_obv = renko_obv.run(df_with_indicators)
+    renk_macd = renko_macd.run(df_with_indicators)
 
     renko_merge_with_candle = renko_macd.merge_dfs(df_with_indicators)
     signl = sgl.trade_signall(renko_merge_with_candle, "")
+
+    sma_df = sma.run(df_filtered)
 
     # generate kpi report
     # kpi_report = measure_performance(renk_macd)
 
     # plot strategy return
-    #   draw_chart(break_df['ret'])
-    #   draw_chart(ren_obv['ret'])
-    #    draw_chart(renk_macd['ret'])
+    draw_chart(break_df['ret'])
+    draw_chart(ren_obv['ret'])
+    draw_chart(renk_macd['ret'])
 
     #   vis.plot_data(break_df['ret'], 'BTC/EUR Closing price 24 hours', '5Min', 'Time', 'Price')
 

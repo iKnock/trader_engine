@@ -121,7 +121,7 @@ def main():
     df_with_indicators = transf_data.cal_indicators(df)
 
     mrg_renko = rnk_macd.merge_dfs(df_with_indicators)
-    trade_sign = trade_signal(mrg_renko, "")
+    trade_sign = trade_signall(mrg_renko, "")
     print(trade_sign)
 
 
