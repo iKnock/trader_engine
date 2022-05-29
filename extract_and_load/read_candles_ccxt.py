@@ -27,72 +27,81 @@ def retry_fetch_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
             raise  # Exception('Failed to fetch', timeframe, symbol, 'OHLCV in', max_retries, 'attempts')
 
 
-# def scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
-#     now = dt.now()
-#     opti_limit = 1000
-#     day_unit_val = 0
-#     candle_size = int(timeframe[:-1])
-#
-#     if const.candle_unit == 'hr':
-#         day_unit_val = 24
-#     elif const.candle_unit == 'min':
-#         day_unit_val = 1440
-#
-#     dur_in_days = (opti_limit * candle_size) / day_unit_val
-#
-#     fetc_since = now - td(dur_in_days)
-#
-#     # convert since from string to milliseconds integer if needed
-#     fet_sin_str = fetc_since.strftime("%Y-%m-%d %H:%M:%S")
-#     fetc_since = exchange.parse8601(fet_sin_str)
-#
-#     all_ohlcv = []
-#     while True:
-#         if since > fetc_since:
-#             break
-#         ohlcv = retry_fetch_ohlcv(exchange, max_retries, symbol, timeframe, fetc_since, limit)
-#         # dt.datetime.fromtimestamp(fetch_since / 1e3) to see fetch_since in date format
-#
-#         if len(ohlcv) > 0:
-#             fetc_since = fetc_since - td(dur_in_days)
-#             fet_sin_str = fetc_since.strftime("%Y-%m-%d %H:%M:%S")
-#             fetc_since = exchange.parse8601(fet_sin_str)
-#
-#             all_ohlcv = ohlcv + all_ohlcv
-#             print(len(all_ohlcv), symbol, 'candles in total from', exchange.iso8601(all_ohlcv[0][0]), 'to',
-#                   exchange.iso8601(all_ohlcv[-1][0]))
-#             # if we have reached the checkpoint
-#         else:
-#             print(symbol + ' has no market data ')
-#             return all_ohlcv
-#     return all_ohlcv
-
-
 def scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
-    earliest_timestamp = exchange.milliseconds()
-    timeframe_duration_in_seconds = exchange.parse_timeframe(timeframe)
-    timeframe_duration_in_ms = timeframe_duration_in_seconds * 1000
-    timedelta = limit * timeframe_duration_in_ms
+    now = dt.now()
+    opti_limit = 1000
+    day_unit_val = 0
+    candle_size = int(timeframe[:-1])
+
+    if const.candle_unit == 'hr':
+        day_unit_val = 24
+    elif const.candle_unit == 'min':
+        day_unit_val = 1440
+
+    dur_in_days = (opti_limit * candle_size) / day_unit_val
+
+    fetc_since = now - td(dur_in_days)
+
+    # convert since from string to milliseconds integer if needed
+    fet_sin_str = fetc_since.strftime("%Y-%m-%d %H:%M:%S")
+    fetc_since = exchange.parse8601(fet_sin_str)
+
     all_ohlcv = []
+    count = 0
     while True:
-        fetch_since = earliest_timestamp - timedelta
+        print('***************fetch since****************************')
+        print(dt.fromtimestamp(fetc_since / 1e3))
+
+        ohlcv = retry_fetch_ohlcv(exchange, max_retries, symbol, timeframe, fetc_since, limit)
         # dt.datetime.fromtimestamp(fetch_since / 1e3) to see fetch_since in date format
-        ohlcv = retry_fetch_ohlcv(exchange, max_retries, symbol, timeframe, fetch_since, limit)
+
         if len(ohlcv) > 0:
-            # if we have reached the beginning of history
-            if ohlcv[0][0] >= earliest_timestamp:
-                break
-            earliest_timestamp = ohlcv[0][0]
+            dur_in_millisec = dur_in_days * 24 * 60 * 60 * 1000
+            fetc_since = int(fetc_since - dur_in_millisec)
+            print('**************second fetch since*****************************')
+            print(dt.fromtimestamp(fetc_since / 1e3))
+
             all_ohlcv = ohlcv + all_ohlcv
             print(len(all_ohlcv), symbol, 'candles in total from', exchange.iso8601(all_ohlcv[0][0]), 'to',
                   exchange.iso8601(all_ohlcv[-1][0]))
             # if we have reached the checkpoint
-            if fetch_since < since:
+            print('**************since*****************************')
+            print(dt.fromtimestamp(since / 1e3))
+            if count == 1:
                 break
+            if since > fetc_since:
+                count += 1
         else:
             print(symbol + ' has no market data ')
             return all_ohlcv
     return all_ohlcv
+
+
+# def scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
+#     earliest_timestamp = exchange.milliseconds()
+#     timeframe_duration_in_seconds = exchange.parse_timeframe(timeframe)
+#     timeframe_duration_in_ms = timeframe_duration_in_seconds * 1000
+#     timedelta = limit * timeframe_duration_in_ms
+#     all_ohlcv = []
+#     while True:
+#         fetch_since = earliest_timestamp - timedelta
+#         # dt.datetime.fromtimestamp(fetch_since / 1e3) to see fetch_since in date format
+#         ohlcv = retry_fetch_ohlcv(exchange, max_retries, symbol, timeframe, fetch_since, limit)
+#         if len(ohlcv) > 0:
+#             # if we have reached the beginning of history
+#             if ohlcv[0][0] >= earliest_timestamp:
+#                 break
+#             earliest_timestamp = ohlcv[0][0]
+#             all_ohlcv = ohlcv + all_ohlcv
+#             print(len(all_ohlcv), symbol, 'candles in total from', exchange.iso8601(all_ohlcv[0][0]), 'to',
+#                   exchange.iso8601(all_ohlcv[-1][0]))
+#             # if we have reached the checkpoint
+#             if fetch_since < since:
+#                 break
+#         else:
+#             print(symbol + ' has no market data ')
+#             return all_ohlcv
+#     return all_ohlcv
 
 
 def write_to_csv(filename, exchange, data, symbol, append):
@@ -130,8 +139,6 @@ def scrape_candles_to_csv(filename, exchange, max_retries, symbol, timeframe, si
 
 def import_csv_to_quest_db(file_path, append):
     print('*******************************************')
-    print(file_path)
-    print('*******************************************')
 
     if append:
         table_name = os.path.basename(os.path.normpath(file_path))
@@ -148,9 +155,6 @@ def import_csv_to_quest_db(file_path, append):
     }
 
     response = requests.post('http://localhost:9000/imp', files=files)
-    print('********import response********************')
-    print(response)
-    print('*******************************************')
 
 
 def get_candles(file_name, exchange, max_retries, symbol, candle_size, since, limit, append):

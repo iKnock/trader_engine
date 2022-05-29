@@ -6,6 +6,8 @@ import utility.constants as const
 import utility.util as util
 from datetime import datetime as dt, timezone as tz, timedelta as td
 import pandas as pd
+from sklearn.linear_model import Ridge
+import utility.visualization_util as vis
 
 
 def normalize(df):
@@ -36,8 +38,8 @@ def create_feature_target(data_fr):
     # Creating Feature and Target
     feature_target_dict = {}
     df = data_fr.copy()
-    feature = df[:, :2]
-    target = df[:, 2:]
+    feature = df.iloc[:, :2]
+    target = df.iloc[:, 2:]
     feature_target_dict['feature'] = feature
     feature_target_dict['target'] = target
     return feature_target_dict
@@ -78,10 +80,48 @@ def trading_window(data, n):
     # n = 1
 
     # Create a column containing the prices for the next 1 days
-    data['Target'] = data[['Close']].shift(-n)
+    data['Target'] = data[['CLOSE']].shift(-n)
 
     # return the new dataset
     return data
+
+
+def train_data(regression_model, feature_train, target_train):
+    # Note that Ridge regression performs linear least squares with L2 regularization.
+    # Create and train the Ridge Linear Regression  Model
+    regression_model.fit(feature_train, target_train)
+    return regression_model
+
+
+def test_model(regression_model, feature_test, target_test):
+    # Test the model and calculate its accuracy
+    lr_accuracy = regression_model.score(feature_test, target_test)
+    print("Linear Regression Score: ", lr_accuracy)
+    return lr_accuracy
+
+
+def predict(regression_model, whole_feature):
+    # Make Prediction
+    predicted_prices = regression_model.predict(whole_feature)
+
+    # Append the predicted values into a list
+    predicted = []
+    for i in predicted_prices:
+        predicted.append(i[0])
+
+    len(predicted)
+    return predicted
+
+
+def append_close_val(data_f):
+    df = data_f.copy()
+    # Append the close values to the list
+    close = []
+    for i in range(len(df)):
+        print(i)
+        # close.append(i[0])
+
+    return close
 
 
 def main():
@@ -95,19 +135,45 @@ def main():
 
     normalized_df = normalize(df)
 
-    training_wind_df = trading_window(normalized_df, 1)#1 for one day window
+    training_wind_df = trading_window(df, 1)  # 1 for one day window
+    training_wind_df = training_wind_df[:-1]
+
     scaled_df = scale_df(training_wind_df)
 
     feat_targ_dict = create_feature_target(scaled_df)
+    feat_targ_dict['feature']
+    feat_targ_dict['target']
 
-    # interactive_plot(normalized_df, 'Normalized Price')
-    # show_plot(normalized_df, 'Normalized price')
+    feat_targ_train_test = split_data(feat_targ_dict)
 
+    feature_train = feat_targ_train_test['feature_train']
+    target_train = feat_targ_train_test['target_train']
 
-    scaled_df.describe()
+    feature_test = feat_targ_train_test['feature_test']
+    target_test = feat_targ_train_test['target_test']
 
-    show_plot(X_train, 'Training Data')
-    show_plot(X_test, 'Testing Data')
+    show_plot(feature_train, 'Training data')
+    show_plot(feature_test, 'Testing Data')
+
+    regression_model = Ridge()
+
+    regression_model = train_data(regression_model, feature_train, target_train)
+
+    accuracy = test_model(regression_model, feature_test, target_test)
+
+    predicted = predict(regression_model, feat_targ_dict['feature'])
+
+    close_price = append_close_val(scaled_df)
+
+    df_predicted = scaled_df
+    df_predicted = df_predicted[:-1]
+    df_predicted['Prediction'] = predicted
+    df_predicted = df_predicted.iloc[:, [0, 3]]
+
+    show_plot(df_predicted, 'Actual vs Predicted')
+    sers = [df_predicted[0], df_predicted['Prediction']]
+    vis.plot_data_many(sers, 'predicted vs actual', 'time', 'price', ['close', 'predicted'])
+
     return df
 
 
