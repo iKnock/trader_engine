@@ -103,7 +103,7 @@ def test_model(regression_model, feature_test, target_test):
 def predict(regression_model, whole_feature):
     # Make Prediction
     predicted_prices = regression_model.predict(whole_feature)
-
+    print(predicted_prices)
     # Append the predicted values into a list
     predicted = []
     for i in predicted_prices:
