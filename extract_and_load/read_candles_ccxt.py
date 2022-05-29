@@ -49,27 +49,21 @@ def scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
     all_ohlcv = []
     count = 0
     while True:
-        print('***************fetch since****************************')
-        print(dt.fromtimestamp(fetc_since / 1e3))
-
+        # print(dt.fromtimestamp(fetc_since / 1e3))
         ohlcv = retry_fetch_ohlcv(exchange, max_retries, symbol, timeframe, fetc_since, limit)
-        # dt.datetime.fromtimestamp(fetch_since / 1e3) to see fetch_since in date format
 
         if len(ohlcv) > 0:
             dur_in_millisec = dur_in_days * 24 * 60 * 60 * 1000
             fetc_since = int(fetc_since - dur_in_millisec)
-            print('**************second fetch since*****************************')
-            print(dt.fromtimestamp(fetc_since / 1e3))
 
             all_ohlcv = ohlcv + all_ohlcv
             print(len(all_ohlcv), symbol, 'candles in total from', exchange.iso8601(all_ohlcv[0][0]), 'to',
                   exchange.iso8601(all_ohlcv[-1][0]))
             # if we have reached the checkpoint
-            print('**************since*****************************')
-            print(dt.fromtimestamp(since / 1e3))
             if count == 1:
                 break
-            if since > fetc_since:
+            if since >= fetc_since:
+                fetc_since = since
                 count += 1
         else:
             print(symbol + ' has no market data ')
