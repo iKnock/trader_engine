@@ -75,10 +75,10 @@ def show_plot(data, title):
 # Function to return the input/output (target) data for AI/ML Model
 # Note that our goal is to predict the future stock price
 # Target stock price today will be tomorrow's price
-def trading_window(data, n):
+def trading_window(df, n):
     # 1 day window
     # n = 1
-
+    data = df.copy()
     # Create a column containing the prices for the next 1 days
     data['Target'] = data[['CLOSE']].shift(-n)
 
@@ -124,27 +124,42 @@ def append_close_val(data_f):
     return close
 
 
+def scale_and_split_ds(data_f):
+    """
+    create training window
+    scale the data set
+    create_feature_target
+    and split the ds to training and testing ds
+    """
+    df = data_f.copy()
+    df = df.iloc[:, 3:]
+    training_wind_df = trading_window(df, 4)  # 1 for one day window
+    training_wind_df = training_wind_df[:-4]  # remove the last nan row
+
+    #scaled_df = scale_df(training_wind_df)
+
+    feat_targ_dict = create_feature_target(training_wind_df)
+    feat_targ_train_test = split_data(feat_targ_dict)
+    return feat_targ_train_test
+
+
+def create_model(feature_train, target_train):
+    regression_model = Ridge()
+    regression_model = train_data(regression_model, feature_train, target_train)
+    return regression_model
+
+
 def main():
     df = ld.load_data()
 
-    now_str = dt.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-    df = ld.filter_df_by_interval(df, const.since, now_str)
-    df.reset_index(drop=True, inplace=True)
+    # now_str = dt.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+    # df = ld.filter_df_by_interval(df, const.since, now_str)
+    # df.reset_index(drop=True, inplace=True)
 
-    df = df.iloc[:, 3:]
-
-    normalized_df = normalize(df)
-
-    training_wind_df = trading_window(df, 1)  # 1 for one day window
-    training_wind_df = training_wind_df[:-1]
-
-    scaled_df = scale_df(training_wind_df)
-
-    feat_targ_dict = create_feature_target(scaled_df)
-    feat_targ_dict['feature']
-    feat_targ_dict['target']
-
-    feat_targ_train_test = split_data(feat_targ_dict)
+    feat_targ_train_test = scale_and_split_ds(df)
+    # ===================================================================
+    # ===================================================================
+    # ===================================================================
 
     feature_train = feat_targ_train_test['feature_train']
     target_train = feat_targ_train_test['target_train']
@@ -152,27 +167,36 @@ def main():
     feature_test = feat_targ_train_test['feature_test']
     target_test = feat_targ_train_test['target_test']
 
-    show_plot(feature_train, 'Training data')
-    show_plot(feature_test, 'Testing Data')
+    show_plot(feat_targ_train_test['target_train'], 'Training data')
+    show_plot(feat_targ_train_test['target_test'], 'Testing Data')
+    # ===================================================================
+    # ===================================================================
+    # ===================================================================
 
-    regression_model = Ridge()
-
-    regression_model = train_data(regression_model, feature_train, target_train)
+    regression_model = create_model(feature_train, target_train)
 
     accuracy = test_model(regression_model, feature_test, target_test)
 
-    predicted = predict(regression_model, feat_targ_dict['feature'])
+    feature_test_predicted = predict(regression_model, feature_test)
+    # predict the whole dataset
+    # predicted_all_ds = predict(regression_model, feat_targ_dict['feature'])
 
-    close_price = append_close_val(scaled_df)
+    target_test.reset_index(drop=True, inplace=True)
+    sers = [feature_test_predicted, target_test]
+    vis.plot_data_many(sers, 'predicted vs actual', 'time', 'price', ['predicted', 'actual'])
 
-    df_predicted = scaled_df
-    df_predicted = df_predicted[:-1]
-    df_predicted['Prediction'] = predicted
-    df_predicted = df_predicted.iloc[:, [0, 3]]
+    pred_act_df = pd.DataFrame()
+    pred_act_df['predicted'] = feature_test_predicted
+    pred_act_df['actual'] = target_test
+    pred_act_df['date'] = feature_test.index
 
-    show_plot(df_predicted, 'Actual vs Predicted')
-    sers = [df_predicted[0], df_predicted['Prediction']]
-    vis.plot_data_many(sers, 'predicted vs actual', 'time', 'price', ['close', 'predicted'])
+    vis.plot_data_many(pred_act_df, 'predicted vs actual', 'time', 'price', ['predicted', 'actual'])
+
+    dff = pd.DataFrame(feature_test_predicted)
+
+    sc = MinMaxScaler(feature_range=(0, 1))
+    dff = sc.fit_transform(dff)
+    unscaled_predicted = sc.inverse_transform(pred_act_df)
 
     return df
 
