@@ -45,6 +45,17 @@ def create_feature_target(data_fr):
     return feature_target_dict
 
 
+def create_feature_target_mult(data_fr):
+    # Creating Feature and Target
+    feature_target_dict = {}
+    df = data_fr.copy()
+    feature = df.iloc[:, :4]
+    target = df.iloc[:, 4:]
+    feature_target_dict['feature'] = feature
+    feature_target_dict['target'] = target
+    return feature_target_dict
+
+
 def split_data(feat_targ_dict):
     # Spliting the data this way, since order is important in time-series
     # Note that we did not use train test split with it's default settings since it shuffles the data
@@ -84,6 +95,43 @@ def trading_window(df, n):
 
     # return the new dataset
     return data
+
+
+def trading_window_mul_col(df, n):
+    data = df.copy()
+    # Create a column containing the prices for the next 1 days
+    data['Target'] = data[['CLOSE']].shift(-n)
+
+    data['c3'] = data[['CLOSE']].shift(-n + 1)
+    data['c2'] = data[['CLOSE']].shift(-n + 2)
+    data['c1'] = data[['CLOSE']].shift(-n + 3)
+
+    # return the new dataset
+    return data
+
+
+def rolling_window_feature_tr(data_f):
+    feat_targ_df = pd.DataFrame()
+    df = data_f.copy()
+    i = 0
+    k = 3
+    change_t = 1
+    csv_length = len(df)
+    for f in 20:
+        json_rec = df[f]
+        index = json_rec.Index
+
+        while i <= k:
+            time_mult = k - (k - i)
+            altri_index = index
+            time_deducter = change_t * time_mult
+            time_index = index - time_deducter
+            print(feat_targ_df[time_index])
+            ++i
+        if i == k:
+            i = 0
+
+        break
 
 
 def train_data(regression_model, feature_train, target_train):
@@ -133,12 +181,12 @@ def scale_and_split_ds(data_f):
     """
     df = data_f.copy()
     df = df.iloc[:, 3:]
-    training_wind_df = trading_window(df, 4)  # 1 for one day window
+    training_wind_df = trading_window(df, 4)  # 4 for one day window
     training_wind_df = training_wind_df[:-4]  # remove the last nan row
 
-    #scaled_df = scale_df(training_wind_df)
+    scaled_df = scale_df(training_wind_df)
 
-    feat_targ_dict = create_feature_target(training_wind_df)
+    feat_targ_dict = create_feature_target(scaled_df)
     feat_targ_train_test = split_data(feat_targ_dict)
     return feat_targ_train_test
 
@@ -149,8 +197,26 @@ def create_model(feature_train, target_train):
     return regression_model
 
 
+def multi_feature_ds(data_fr):
+    df = data_fr.copy()
+    tran_window = trading_window_mul_col(df, 4)
+    tr_win_df = pd.DataFrame()
+    tr_win_df['CLOSE'] = tran_window['CLOSE']
+    tr_win_df['c1'] = tran_window['c1']
+    tr_win_df['c2'] = tran_window['c2']
+    tr_win_df['c3'] = tran_window['c3']
+    tr_win_df['Target'] = tran_window['Target']
+
+    tr_win_df = tr_win_df[:-4]
+
+    feat_targ_dict = create_feature_target_mult(tr_win_df)
+    feat_targ_train_test = split_data(feat_targ_dict)
+    return feat_targ_train_test
+
+
 def main():
     df = ld.load_data()
+    df = df.iloc[:, 3:]
 
     # now_str = dt.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     # df = ld.filter_df_by_interval(df, const.since, now_str)
