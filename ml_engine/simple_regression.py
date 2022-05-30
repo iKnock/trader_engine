@@ -117,21 +117,21 @@ def rolling_window_feature_tr(data_f):
     k = 3
     change_t = 1
     csv_length = len(df)
-    for f in 20:
-        json_rec = df[f]
-        index = json_rec.Index
+    #for f in range(20):
+    json_rec = df
+    index = df.index
 
-        while i <= k:
-            time_mult = k - (k - i)
-            altri_index = index
-            time_deducter = change_t * time_mult
-            time_index = index - time_deducter
-            print(feat_targ_df[time_index])
-            ++i
-        if i == k:
-            i = 0
+    while i <= k:
+        time_mult = k - (k - i)
+        altri_index = index
+        time_deducter = change_t * time_mult
+        time_index = index - time_deducter
+        print(feat_targ_df[time_index])
+        var = ++i
+    if i == k:
+        i = 0
 
-        break
+    #break
 
 
 def train_data(regression_model, feature_train, target_train):
@@ -216,13 +216,15 @@ def multi_feature_ds(data_fr):
 
 def main():
     df = ld.load_data()
-    df = df.iloc[:, 3:]
+    df = df.iloc[:, [3]]
 
     # now_str = dt.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     # df = ld.filter_df_by_interval(df, const.since, now_str)
     # df.reset_index(drop=True, inplace=True)
 
     feat_targ_train_test = scale_and_split_ds(df)
+
+    roll_window = rolling_window_feature_tr(df)
     # ===================================================================
     # ===================================================================
     # ===================================================================
