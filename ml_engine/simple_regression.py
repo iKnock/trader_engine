@@ -38,8 +38,8 @@ def create_feature_target(data_fr):
     # Creating Feature and Target
     feature_target_dict = {}
     df = data_fr.copy()
-    feature = df.iloc[:, :2]
-    target = df.iloc[:, 2:]
+    feature = df.iloc[:, :1]
+    target = df.iloc[:, 1:]
     feature_target_dict['feature'] = feature
     feature_target_dict['target'] = target
     return feature_target_dict
@@ -117,7 +117,7 @@ def rolling_window_feature_tr(data_f):
     k = 3
     change_t = 1
     csv_length = len(df)
-    #for f in range(20):
+    # for f in range(20):
     json_rec = df
     index = df.index
 
@@ -131,7 +131,7 @@ def rolling_window_feature_tr(data_f):
     if i == k:
         i = 0
 
-    #break
+    # break
 
 
 def train_data(regression_model, feature_train, target_train):
@@ -149,6 +149,19 @@ def test_model(regression_model, feature_test, target_test):
 
 
 def predict(regression_model, whole_feature):
+    # Make Prediction
+    predicted_prices = regression_model.predict(whole_feature)
+    print(predicted_prices)
+    # Append the predicted values into a list
+    predicted = []
+    for i in predicted_prices:
+        predicted.append(i[0])
+
+    len(predicted)
+    return predicted
+
+
+def predict_cont_values(regression_model, whole_feature):
     # Make Prediction
     predicted_prices = regression_model.predict(whole_feature)
     print(predicted_prices)
@@ -180,9 +193,9 @@ def scale_and_split_ds(data_f):
     and split the ds to training and testing ds
     """
     df = data_f.copy()
-    df = df.iloc[:, 3:]
-    training_wind_df = trading_window(df, 4)  # 4 for one day window
-    training_wind_df = training_wind_df[:-4]  # remove the last nan row
+    # df = df.iloc[:, 3:]
+    training_wind_df = trading_window(df, 1)  # 1 for one day window
+    training_wind_df = training_wind_df[:-1]  # remove the last nan row
 
     scaled_df = scale_df(training_wind_df)
 
@@ -217,6 +230,12 @@ def multi_feature_ds(data_fr):
 def main():
     df = ld.load_data()
     df = df.iloc[:, [3]]
+    df = df.iloc[:, 3:]
+
+    df['Target'] = df[['CLOSE']].shift(-1)
+    df = df[:-1]
+    feat_targ_dict = create_feature_target(df)
+    feat_targ_train_test = split_data(feat_targ_dict)
 
     # now_str = dt.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     # df = ld.filter_df_by_interval(df, const.since, now_str)
@@ -246,6 +265,29 @@ def main():
     accuracy = test_model(regression_model, feature_test, target_test)
 
     feature_test_predicted = predict(regression_model, feature_test)
+    print(feature_test_predicted[-1])
+    pred_value = []
+    cont_pred_feature = pd.DataFrame(pd.Series([feature_test_predicted[-1]]), columns=['CLOSE'])
+    for i in range(15):
+        pred_value.append(predict_cont_values(regression_model, cont_pred_feature))
+        cont_pred_feature = pd.DataFrame(pd.Series(pred_value[-1]), columns=['CLOSE'])
+        i += 1
+
+    future_predicted_values = pd.DataFrame(pred_value, columns=['CLOSE'])
+    future_predicted_values['date'] = pd.date_range(start='2022-05-31T09:30:0000', periods=len(future_predicted_values),
+                                                    freq='30min')
+    date = future_predicted_values['date']
+    price = future_predicted_values['CLOSE']
+
+    future_predicted_values['date'] = pd.to_datetime(future_predicted_values['date'])
+
+    future_predicted_values['date'].max() - future_predicted_values['date'].min()
+
+    future_predicted_values.plot(x=date, y=price)
+
+    future_predicted_values.plot()
+    vis.plot_data(future_predicted_values['CLOSE'], 'predicted vs actual', 'time', 'price', ['predicted', 'actual'])
+
     # predict the whole dataset
     # predicted_all_ds = predict(regression_model, feat_targ_dict['feature'])
 
