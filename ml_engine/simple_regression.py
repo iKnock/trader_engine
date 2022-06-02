@@ -227,23 +227,57 @@ def multi_feature_ds(data_fr):
     return feat_targ_train_test
 
 
-def main():
-    df = ld.load_data()
+def run(data_f):
+    df = data_f.copy()
     df = df.iloc[:, [3]]
-    df = df.iloc[:, 3:]
 
     df['Target'] = df[['CLOSE']].shift(-1)
     df = df[:-1]
     feat_targ_dict = create_feature_target(df)
     feat_targ_train_test = split_data(feat_targ_dict)
 
-    # now_str = dt.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-    # df = ld.filter_df_by_interval(df, const.since, now_str)
-    # df.reset_index(drop=True, inplace=True)
+    feature_train = feat_targ_train_test['feature_train']
+    target_train = feat_targ_train_test['target_train']
+    feature_test = feat_targ_train_test['feature_test']
+    target_test = feat_targ_train_test['target_test']
+
+    regression_model = create_model(feature_train, target_train)
+
+    accuracy = test_model(regression_model, feature_test, target_test)
+
+    feature_test_predicted = predict(regression_model, feature_test)
+    print(feature_test_predicted[-1])
+
+    pred_value = []
+    cont_pred_feature = pd.DataFrame(pd.Series([feature_test_predicted[-1]]), columns=['CLOSE'])
+    pred_value.append(cont_pred_feature.iloc[0, 0])
+    for i in range(48):
+        next_val = predict_cont_values(regression_model, cont_pred_feature)
+        pred_value.append(next_val[0])
+        cont_pred_feature = pd.DataFrame(pd.Series(pred_value[-1]), columns=['CLOSE'])
+        i += 1
+
+    future_predicted_values = pd.DataFrame(pred_value, columns=['CLOSE'])
+    future_predicted_values['date'] = pd.date_range(start='2022-06-02T13:30:0000',
+                                                    periods=len(future_predicted_values),
+                                                    freq='30min')
+
+
+def filter_df(data_fr):
+    df = data_fr.copy()
+    now_str = dt.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+    df = ld.filter_df_by_interval(df, const.since, now_str)
+    df.reset_index(drop=True, inplace=True)
+    return df
+
+
+def main():
+    df = ld.load_data()
+    df = df.iloc[:, [3]]
+    df = df.iloc[:, 3:]
 
     feat_targ_train_test = scale_and_split_ds(df)
 
-    roll_window = rolling_window_feature_tr(df)
     # ===================================================================
     # ===================================================================
     # ===================================================================
@@ -263,64 +297,14 @@ def main():
     regression_model = create_model(feature_train, target_train)
 
     accuracy = test_model(regression_model, feature_test, target_test)
+    print(accuracy)
 
     feature_test_predicted = predict(regression_model, feature_test)
-    print(feature_test_predicted[-1])
-
-    pred_value = []
-    cont_pred_feature = pd.DataFrame(pd.Series([feature_test_predicted[-1]]), columns=['CLOSE'])
-    pred_value.append(cont_pred_feature.iloc[0, 0])
-    for i in range(48):
-        next_val = predict_cont_values(regression_model, cont_pred_feature)
-        pred_value.append(next_val[0])
-        cont_pred_feature = pd.DataFrame(pd.Series(pred_value[-1]), columns=['CLOSE'])
-        i += 1
-
-    # for index, row in df.iterrows():
-    # print(row['c1'], row['c2'])
-
-    future_predicted_values = pd.DataFrame(pred_value, columns=['CLOSE'])
-    future_predicted_values['date'] = pd.date_range(start='2022-06-02T13:30:0000',
-                                                    periods=len(future_predicted_values),
-                                                    freq='30min')
-
-    future_predicted_values.plot()
-
-    fig, ax = plt.subplots()
-    ax.plot(future_predicted_values['date'], future_predicted_values['CLOSE'])
-    fig.show()
-
-    date = future_predicted_values['date']
-    price = future_predicted_values['CLOSE']
-
-    future_predicted_values['date'] = pd.to_datetime(future_predicted_values['date'])
-
-    future_predicted_values['date'].max() - future_predicted_values['date'].min()
-
-    future_predicted_values.plot(x=date, y=price)
-
-    future_predicted_values.plot()
-    vis.plot_data(future_predicted_values['CLOSE'], 'predicted vs actual', 'time', 'price', ['predicted', 'actual'])
-
     # predict the whole dataset
     # predicted_all_ds = predict(regression_model, feat_targ_dict['feature'])
-
     target_test.reset_index(drop=True, inplace=True)
     sers = [feature_test_predicted, target_test]
     vis.plot_data_many(sers, 'predicted vs actual', 'time', 'price', ['predicted', 'actual'])
-
-    pred_act_df = pd.DataFrame()
-    pred_act_df['predicted'] = feature_test_predicted
-    pred_act_df['actual'] = target_test
-    pred_act_df['date'] = feature_test.index
-
-    vis.plot_data_many(pred_act_df, 'predicted vs actual', 'time', 'price', ['predicted', 'actual'])
-
-    dff = pd.DataFrame(feature_test_predicted)
-
-    sc = MinMaxScaler(feature_range=(0, 1))
-    dff = sc.fit_transform(dff)
-    unscaled_predicted = sc.inverse_transform(pred_act_df)
 
     return df
 
