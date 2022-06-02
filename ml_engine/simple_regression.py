@@ -63,7 +63,7 @@ def split_data(feat_targ_dict):
     feat_targ_train_test_dict = {}
     x = feat_targ_dict['feature']
     y = feat_targ_dict['target']
-    split = int(0.65 * len(x))
+    split = int(0.70 * len(x))
     feature_train = x[:split]
     target_train = y[:split]
     feature_test = x[split:]
@@ -266,16 +266,30 @@ def main():
 
     feature_test_predicted = predict(regression_model, feature_test)
     print(feature_test_predicted[-1])
+
     pred_value = []
     cont_pred_feature = pd.DataFrame(pd.Series([feature_test_predicted[-1]]), columns=['CLOSE'])
-    for i in range(15):
-        pred_value.append(predict_cont_values(regression_model, cont_pred_feature))
+    pred_value.append(cont_pred_feature.iloc[0, 0])
+    for i in range(48):
+        next_val = predict_cont_values(regression_model, cont_pred_feature)
+        pred_value.append(next_val[0])
         cont_pred_feature = pd.DataFrame(pd.Series(pred_value[-1]), columns=['CLOSE'])
         i += 1
 
+    # for index, row in df.iterrows():
+    # print(row['c1'], row['c2'])
+
     future_predicted_values = pd.DataFrame(pred_value, columns=['CLOSE'])
-    future_predicted_values['date'] = pd.date_range(start='2022-05-31T09:30:0000', periods=len(future_predicted_values),
+    future_predicted_values['date'] = pd.date_range(start='2022-06-02T13:30:0000',
+                                                    periods=len(future_predicted_values),
                                                     freq='30min')
+
+    future_predicted_values.plot()
+
+    fig, ax = plt.subplots()
+    ax.plot(future_predicted_values['date'], future_predicted_values['CLOSE'])
+    fig.show()
+
     date = future_predicted_values['date']
     price = future_predicted_values['CLOSE']
 
