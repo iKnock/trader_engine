@@ -212,6 +212,12 @@ def create_model(feature_train, target_train):
     return regression_model
 
 
+def create_model_alpha(feature_train, target_train, alpha_value):
+    regression_model = Ridge(alpha=alpha_value)
+    regression_model = train_data(regression_model, feature_train, target_train)
+    return regression_model
+
+
 def multi_feature_ds(data_fr):
     df = data_fr.copy()
     tran_window = trading_window_mul_col(df, 4)
@@ -346,6 +352,77 @@ def main():
     vis.plot_data_many(sers, 'predicted vs actual', 'time', 'price', ['predicted', 'actual'])
 
     return df
+
+
+def far_prediction(regression_model, df, how_far_to_future):
+    feature_test_predicted = df.copy()
+    pred_value = []
+    cont_pred_feature = pd.DataFrame(pd.Series([feature_test_predicted[-1]]), columns=['CLOSE'])
+    pred_value.append(cont_pred_feature.iloc[0, 0])
+    for i in range(how_far_to_future):
+        next_val = predict_cont_values(regression_model, cont_pred_feature)
+        pred_value.append(next_val[0])
+        cont_pred_feature = pd.DataFrame(pd.Series(pred_value[-1]), columns=['CLOSE'])
+        i += 1
+
+    future_predicted_values = pd.DataFrame(pred_value, columns=['CLOSE'])
+    future_predicted_values['date'] = pd.date_range(start='2022-06-02T13:30:0000',
+                                                    periods=len(future_predicted_values),
+                                                    freq='30min')
+    return future_predicted_values
+
+
+def prep_for_traning_with_scale(data_f, how_far_to_future):
+    df = data_f.copy()
+    training_wind_df = trading_window(df, how_far_to_future)  # 1 for one day window
+    training_wind_df = training_wind_df[:-how_far_to_future]  # remove the last nan row
+
+    scaled_df = scale_df(training_wind_df)
+
+    feat_targ_dict = create_feature_target(scaled_df)
+    feat_targ_train_test = split_data(feat_targ_dict)
+    return feat_targ_train_test
+
+
+def prep_for_traning_with_out_scale(data_f, how_far_to_future):
+    df = data_f.copy()
+    training_wind_df = trading_window(df, how_far_to_future)  # 1 for one day window
+    training_wind_df = training_wind_df[:-how_far_to_future]  # remove the last nan row
+
+    feat_targ_dict = create_feature_target(training_wind_df)
+    feat_targ_train_test = split_data(feat_targ_dict)
+    return feat_targ_train_test
+
+
+def test_reg_alpha(data_fr):
+    # df = data_fr.copy()
+    df = ld.load_data()
+    df = df.iloc[:, [3]]
+
+    feat_targ_train_test = scale_and_split_ds(df)
+
+    feat_targ_train_test = multi_feature_ds(df)  # prepare 2 hour prediction training set
+
+    feat_targ_train_test = prep_for_traning_with_out_scale(df, 1)
+
+    feature_train = feat_targ_train_test['feature_train']
+    target_train = feat_targ_train_test['target_train']
+
+    feature_test = feat_targ_train_test['feature_test']
+    target_test = feat_targ_train_test['target_test']
+
+    regression_model = create_model_alpha(feature_train, target_train, 2)
+
+    accuracy = test_model(regression_model, feature_test, target_test)
+    print(accuracy)
+
+    feature_test_predicted = predict(regression_model, feature_test)
+
+    future_pred_values = far_prediction(regression_model, feature_test_predicted, 48)
+
+    target_test.reset_index(drop=True, inplace=True)
+    sers = [feature_test_predicted, target_test]
+    vis.plot_data_many(sers, 'predicted vs actual', 'time', 'price', ['predicted', 'actual'])
 
 
 if __name__ == '__main__':
