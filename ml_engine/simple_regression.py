@@ -8,6 +8,8 @@ from datetime import datetime as dt, timezone as tz, timedelta as td
 import pandas as pd
 from sklearn.linear_model import Ridge
 import utility.visualization_util as vis
+from sklearn.model_selection import KFold, cross_val_score, cross_val_predict
+from sklearn import metrics
 
 
 def normalize(df):
@@ -228,6 +230,9 @@ def multi_feature_ds(data_fr):
 
 
 def run(data_f):
+    """
+    take a data set, predict and return 48 future values
+    """
     df = data_f.copy()
     df = df.iloc[:, [3]]
 
@@ -262,6 +267,8 @@ def run(data_f):
                                                     periods=len(future_predicted_values),
                                                     freq='30min')
 
+    return future_predicted_values
+
 
 def filter_df(data_fr):
     df = data_fr.copy()
@@ -271,6 +278,16 @@ def filter_df(data_fr):
     return df
 
 
+def cross_validation(X, Y):
+    kf = KFold(n_splits=2, random_state=None, shuffle=False)
+    kf.get_n_splits(X)
+
+    for train_index, test_index in kf.split(X):
+        print("TRAIN:", train_index, "TEST:", test_index)
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = Y[train_index], Y[test_index]
+
+
 def main():
     df = ld.load_data()
     df = df.iloc[:, [3]]
@@ -278,6 +295,28 @@ def main():
 
     feat_targ_train_test = scale_and_split_ds(df)
 
+    training_wind_df = trading_window(df, 1)  # 1 for one day window
+    training_wind_df = training_wind_df[:-1]
+
+    feat_targ_dict = create_feature_target(training_wind_df)
+
+    X = feat_targ_dict['feature']
+    Y = feat_targ_dict['target']
+    X.reset_index(drop=True, inplace=True)
+    Y.reset_index(drop=True, inplace=True)
+    kf = KFold(n_splits=2, random_state=None, shuffle=False)
+
+    for train_index, test_index in kf.split(X):
+        print("TRAIN:", train_index, "TEST:", test_index)
+        X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+        y_train, y_test = Y.iloc[train_index], Y.iloc[test_index]
+        regression_model = create_model(X_train, y_train)
+        accuracy = test_model(regression_model, X_test, y_test)
+        scores = cross_val_score(regression_model, training_wind_df, Y, cv=6)
+        predictions = cross_val_predict(regression_model, training_wind_df, Y, cv=6)
+
+        # plt.scatter(Y, predictions)
+        feature_test_predicted = predict(regression_model, X_test)
     # ===================================================================
     # ===================================================================
     # ===================================================================
