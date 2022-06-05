@@ -420,8 +420,10 @@ def test_reg_alpha(data_fr):
 
     future_pred_values = far_prediction(regression_model, feature_test_predicted, 48)
 
+    fut_pred_list = pd.Series(future_pred_values['CLOSE'])
+    fut_pred_list = fut_pred_list.tolist()
     target_test.reset_index(drop=True, inplace=True)
-    sers = [feature_test_predicted, target_test]
+    sers = [fut_pred_list]
     vis.plot_data_many(sers, 'predicted vs actual', 'time', 'price', ['predicted', 'actual'])
 
 
