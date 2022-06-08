@@ -6,6 +6,10 @@ from pathlib import Path
 import os
 import sys
 from datetime import datetime as dt, timezone as tz, timedelta as td
+import numpy as np
+from sklearn.metrics import mean_absolute_error
+from extract_and_load import extract_data_yahoo
+
 
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(''))))
 sys.path.append(root + '/codes/TRADER-ENGINE/trader_engine')
@@ -22,13 +26,21 @@ def prep_prophet_training_input():
     df_prop = pd.DataFrame(df)
 
     df_prop.index = pd.to_datetime(df.index, utc=True, unit='ms').tz_convert('europe/rome')
-
     df_prop['ds'] = pd.to_datetime(df_prop.index).tz_localize(None)
     df_prop = df.iloc[:, [3, 5]]
     df_prop = df_prop.rename(columns={'CLOSE': 'y', 'ds': 'ds'})
-
     df_prop.reset_index(drop=True, inplace=True)
     return df_prop
+
+
+def create_train_test_set(df):
+    x = np.asarray(df)
+    # Split the data
+    split = int(0.7 * len(x))
+    x_train = x[:split]
+    x_test = x[:split]
+    train_test_dict = {'x_train': x_train, 'x_test': x_test}
+    return train_test_dict
 
 
 def pre_future_val(pred_start_date, prediction_length):
@@ -56,16 +68,50 @@ def save_prediction_csv(df):
     forecast.to_csv(full_path, sep='\t')
 
 
+def get_yahoo_hourl_candle():
+    tickers = ["MSFT", "AAPL", "GOOG"]
+    yfinance_ohlcv = {}
+    for ticker in tickers:
+        yfinance_ohlcv[ticker] = extract_data_yahoo.read_candle_yahoo(ticker, '1y', '1h')
+    return yfinance_ohlcv
+
+def pre_yahoo_data():
+    df = get_yahoo_hourl_candle()
+
+
 def forecast_model():
     df_prop = prep_prophet_training_input()
 
-    model = create_fit_prophet_model(df_prop)
+    train_test_dict = create_train_test_set(df_prop)
 
-    pred_start_date = dt.strptime(str(df_prop.iloc[-1]['ds']), '%Y-%m-%d %H:%M:%S')
+    train_set = pd.DataFrame(train_test_dict.get('x_train'))
+    train_set.columns = ['y', 'ds']
+    test_set = pd.DataFrame(train_test_dict.get('x_test'))
+    test_set.columns = ['y', 'ds']
 
+    model = create_fit_prophet_model(train_set)
+
+    # =====================================================================================
+    # =====forcast the future starting from the last date of the dataset==============
+    # ======================================================================================
+    pred_start_date = dt.strptime(str(test_set.iloc[-1]['ds']), '%Y-%m-%d %H:%M:%S')
     future_values_to_predict = pre_future_val(pred_start_date, 192)
-
     forecast = model.predict(future_values_to_predict)
+    fig_forcast = model.plot(forecast)
+    fig2_for_comp = model.plot_components(forecast)
+    # ==================================================================
+    # =====forcast using hold out method and evaluate the performance====
+    # ==================================================================
+
+    forecast_test_set = model.predict(test_set.iloc[:, [1]])
+    fig1 = model.plot(forecast_test_set)
+    fig2 = model.plot_components(forecast_test_set)
+
+    # calculate MAE between expected and predicted values for december
+    y_true = test_set['y']
+    y_pred = forecast_test_set['yhat']
+    mae = mean_absolute_error(y_true, y_pred)
+    print('MAE: %.3f' % mae)
 
     model_forecast_dict = {'forecast': forecast, 'model': model}
     return model_forecast_dict
