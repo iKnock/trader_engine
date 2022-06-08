@@ -5,6 +5,7 @@ from matplotlib import pyplot
 from pathlib import Path
 import os
 import sys
+from datetime import datetime as dt, timezone as tz, timedelta as td
 
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(''))))
 sys.path.append(root + '/codes/TRADER-ENGINE/trader_engine')
@@ -30,9 +31,9 @@ def prep_prophet_training_input():
     return df_prop
 
 
-def pre_future_val():
-    future_values_to_predict = pd.date_range(start='2021-05-29T05:30:0000',
-                                             periods=24480,
+def pre_future_val(pred_start_date, prediction_length):
+    future_values_to_predict = pd.date_range(start=pred_start_date,
+                                             periods=prediction_length,
                                              freq='30min')
 
     future_values_to_predict = pd.DataFrame(future_values_to_predict)
@@ -55,19 +56,27 @@ def save_prediction_csv(df):
     forecast.to_csv(full_path, sep='\t')
 
 
-def run():
+def forecast_model():
     df_prop = prep_prophet_training_input()
 
     model = create_fit_prophet_model(df_prop)
 
-    future_values_to_predict = pre_future_val()
+    pred_start_date = dt.strptime(str(df_prop.iloc[-1]['ds']), '%Y-%m-%d %H:%M:%S')
+
+    future_values_to_predict = pre_future_val(pred_start_date, 192)
 
     forecast = model.predict(future_values_to_predict)
-    forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].tail()
+
+    model_forecast_dict = {'forecast': forecast, 'model': model}
+    return model_forecast_dict
+
+
+def run():
+    model_forecast_dict = forecast_model()
+    model = model_forecast_dict.get('model')
+    forecast = model_forecast_dict.get('forecast')
+
+    save_prediction_csv(forecast.iloc[:, [0, 1, 2, 3, 4, 5, 18]])
 
     fig1 = model.plot(forecast)
-
-    df_prop.plot()
-    pyplot.show()
-
     fig2 = model.plot_components(forecast)
