@@ -10,7 +10,6 @@ import numpy as np
 from sklearn.metrics import mean_absolute_error
 from extract_and_load import extract_data_yahoo
 
-
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(''))))
 sys.path.append(root + '/codes/TRADER-ENGINE/trader_engine')
 
@@ -75,8 +74,41 @@ def get_yahoo_hourl_candle():
         yfinance_ohlcv[ticker] = extract_data_yahoo.read_candle_yahoo(ticker, '1y', '1h')
     return yfinance_ohlcv
 
+
 def pre_yahoo_data():
     df = get_yahoo_hourl_candle()
+    df_appl = df.get('AAPL').get('AAPL')
+
+    df_appl.index = pd.to_datetime(df.index, utc=True, unit='ms').tz_convert('europe/rome')
+    df_appl['ds'] = pd.to_datetime(df_appl.index).tz_localize(None)
+    df_appl = df_appl.iloc[:, [4, 6]]
+    df_appl = df_appl.rename(columns={'Adj Close': 'y', 'ds': 'ds'})
+    df_appl.reset_index(drop=True, inplace=True)
+
+    train_test_dict = create_train_test_set(df_appl)
+
+    train_set = pd.DataFrame(train_test_dict.get('x_train'))
+    train_set.columns = ['y', 'ds']
+    test_set = pd.DataFrame(train_test_dict.get('x_test'))
+    test_set.columns = ['y', 'ds']
+
+    model = create_fit_prophet_model(train_set)
+
+    # =====================================================================================
+    # =====forcast the future starting from the last date of the dataset==============
+    # ======================================================================================
+    pred_start_date = dt.strptime(str(test_set.iloc[-1]['ds']), '%Y-%m-%d %H:%M:%S')
+    future_values_to_predict = pre_future_val(pred_start_date, 192)
+    forecast = model.predict(future_values_to_predict)
+    fig_forcast = model.plot(forecast)
+    fig2_for_comp = model.plot_components(forecast)
+    # ==================================================================
+    # =====forcast using hold out method and evaluate the performance====
+    # ==================================================================
+
+    forecast_test_set = model.predict(test_set.iloc[:, [1]])
+    fig1 = model.plot(forecast_test_set)
+    fig2 = model.plot_components(forecast_test_set)
 
 
 def forecast_model():
