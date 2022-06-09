@@ -16,36 +16,42 @@ def normalize_data(data_f):
     return training_set_scaled
 
 
-def create_traning_test_set(df, scaled_tranig_set):
+def create_traning_test_set(df, scaled_tranig_set, date_time):
     price_volume_df = df.copy()
     training_set_scaled = scaled_tranig_set.copy()
     # Create the training and testing data, training data contains present day and previous day values
     training_test_data = {}
     x = []
     y = []
+    date_time_new = []
     for i in range(1, len(price_volume_df)):
         x.append(training_set_scaled[i - 1:i, 0])
         y.append(training_set_scaled[i, 0])
+        date_time_new.append(date_time[i])
 
     training_test_data['feature'] = x
     training_test_data['target'] = y
+    training_test_data['date_time'] = date_time
     return training_test_data
 
 
-def split_data(train_test_data_dict):
+def split_data(train_test_data_dict, to_spl_date_time):
     x = train_test_data_dict['feature']
     y = train_test_data_dict['target']
     # Convert the data into array format
     x = np.asarray(x)
     y = np.asarray(y)
-
+    z = np.asarray(to_spl_date_time)
     # Split the data
     split = int(0.7 * len(x))
     x_train = x[:split]
     y_train = y[:split]
+    z_train = z[:split]
     x_test = x[split:]
     y_test = y[split:]
-    train_test_dict = {'x_train': x_train, 'y_train': y_train, 'x_test': x_test, 'y_test': y_test}
+    z_test = z[split:]
+    train_test_dict = {'x_train': x_train, 'y_train': y_train, 'x_test': x_test, 'y_test': y_test, 'z_train': z_train,
+                       'z_test': z_test}
     return train_test_dict
 
 
@@ -138,11 +144,17 @@ if __name__ == '__main__':
 
     norm_data = normalize_data(df)
 
-    training_test_data = create_traning_test_set(df, norm_data)
+    df['date_time'] = pd.to_datetime(df.index, utc=True, unit='ms').tz_convert('europe/rome')
+    df.reset_index(drop=True, inplace=True)
+    training_test_data = create_traning_test_set(df, norm_data, df['date_time'])
     x = training_test_data['feature']
     y = training_test_data['target']
+    date_time = training_test_data['date_time']
 
-    splited_data = split_data(training_test_data)
+    splited_data = split_data(training_test_data, date_time)
+
+    z_train = splited_data['z_train']
+    z_test = splited_data['z_test']
 
     model_forecast_dict = create_model_from_data(splited_data)
 
@@ -161,13 +173,15 @@ if __name__ == '__main__':
 
     df_predicted = pd.DataFrame(test_predicted)
 
-    df_predicted['y_test'] = feat_target_train_test_set['y_test']
+    df_predicted['actual'] = feat_target_train_test_set['y_test']
 
-    df_predicted.columns = ['predicted', 'actual']
+    df_predicted['date_time'] = pd.DataFrame(z_test)
+
+    df_predicted.columns = ['predicted', 'actual', 'date_time']
     df_predicted.plot()
 
-    df_predicted.plot(y='predicted')
+    df_predicted.plot()
     plt.show()
 
-    sers = [test_predicted]
+    sers = [df_predicted['predicted'], df_predicted['actual']]
     vis.plot_data_many(sers, 'predicted vs actual', 'time', 'price', ['predicted', 'actual'])
