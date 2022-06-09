@@ -3,10 +3,13 @@ from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 import matplotlib.pyplot as plt
 import extract_and_load.load_data as ld
+from tensorflow.python.framework.ops import disable_eager_execution
+import utility.visualization_util as vis
+import pandas as pd
 
 
-# Normalize the data
 def normalize_data(data_f):
+    # Normalize the data
     training_data = data_f.copy()
     sc = MinMaxScaler(feature_range=(0, 1))
     training_set_scaled = sc.fit_transform(training_data)
@@ -14,8 +17,8 @@ def normalize_data(data_f):
 
 
 def create_traning_test_set(df, scaled_tranig_set):
-    price_volume_df = df
-    training_set_scaled = scaled_tranig_set
+    price_volume_df = df.copy()
+    training_set_scaled = scaled_tranig_set.copy()
     # Create the training and testing data, training data contains present day and previous day values
     training_test_data = {}
     x = []
@@ -24,17 +27,18 @@ def create_traning_test_set(df, scaled_tranig_set):
         x.append(training_set_scaled[i - 1:i, 0])
         y.append(training_set_scaled[i, 0])
 
-    training_test_data['training'] = x
-    training_test_data['test'] = y
+    training_test_data['feature'] = x
+    training_test_data['target'] = y
     return training_test_data
 
 
 def split_data(train_test_data_dict):
-    x = train_test_data_dict['training']
-    y = train_test_data_dict['test']
+    x = train_test_data_dict['feature']
+    y = train_test_data_dict['target']
     # Convert the data into array format
     x = np.asarray(x)
     y = np.asarray(y)
+
     # Split the data
     split = int(0.7 * len(x))
     x_train = x[:split]
@@ -56,14 +60,14 @@ def reshape_features(train, test):
 
 
 def create_lstm_modle(x_train_data):
-    x_train = x_train_data.copy()
+    x_train = x_train_data
     # Create the model
     inputs = keras.layers.Input(shape=(x_train.shape[1], x_train.shape[2]))
     x = keras.layers.LSTM(150, return_sequences=True)(inputs)
     x = keras.layers.Dropout(0.3)(x)
     x = keras.layers.LSTM(150, return_sequences=True)(x)
     x = keras.layers.Dropout(0.3)(x)
-    x = keras.layers.LSTM(150)(x)
+    x = keras.layers.LSTM(150, return_sequences=True)(x)
     outputs = keras.layers.Dense(1, activation='linear')(x)
 
     model = keras.Model(inputs=inputs, outputs=outputs)
@@ -93,7 +97,77 @@ def run():
 
     splited_data = split_data(training_test_data)
 
+    # feature_train_test = reshape_features(splited_data['x_train'], splited_data['x_test'])
+    return splited_data
+
+
+def prepare_data(df):
+    norm_data = normalize_data(df)
+
+    training_test_data = create_traning_test_set(df, norm_data)
+
+    splited_data = split_data(training_test_data)
+
+    # feature_train_test = reshape_features(splited_data['x_train'], splited_data['x_test'])
+    return splited_data
+
+
+def create_model():
+    splited_data = run()
+
     feature_train_test = reshape_features(splited_data['x_train'], splited_data['x_test'])
     keras_model = create_lstm_modle(feature_train_test['x_train'])
 
-    history = train_data(keras_model, splited_data['x_train'], splited_data['x_test'])
+    model_forecast_dict = {'feature_train_test': feature_train_test, 'model': keras_model,
+                           'feat_target_train_test_set': splited_data}
+    return model_forecast_dict
+
+
+def create_model_from_data(splited_data):
+    feature_train_test = reshape_features(splited_data['x_train'], splited_data['x_test'])
+    keras_model = create_lstm_modle(feature_train_test['x_train'])
+
+    model_forecast_dict = {'feature_train_test': feature_train_test, 'model': keras_model,
+                           'feat_target_train_test_set': splited_data}
+    return model_forecast_dict
+
+
+if __name__ == '__main__':
+    df = ld.load_data()
+    df = df.iloc[:, 3:]
+
+    norm_data = normalize_data(df)
+
+    training_test_data = create_traning_test_set(df, norm_data)
+    x = training_test_data['feature']
+    y = training_test_data['target']
+
+    splited_data = split_data(training_test_data)
+
+    model_forecast_dict = create_model_from_data(splited_data)
+
+    model = model_forecast_dict.get('model')
+    feature_train_test = model_forecast_dict.get('feature_train_test')
+    feat_target_train_test_set = model_forecast_dict.get('feat_target_train_test_set')
+
+    history = train_data(model, feature_train_test['x_train'], feat_target_train_test_set['y_train'])
+
+    predicted = model.predict(feat_target_train_test_set['x_test'])
+
+    test_predicted = []
+
+    for i in predicted:
+        test_predicted.append(i[0][0])
+
+    df_predicted = pd.DataFrame(test_predicted)
+
+    df_predicted['y_test'] = feat_target_train_test_set['y_test']
+
+    df_predicted.columns = ['predicted', 'actual']
+    df_predicted.plot()
+
+    df_predicted.plot(y='predicted')
+    plt.show()
+
+    sers = [test_predicted]
+    vis.plot_data_many(sers, 'predicted vs actual', 'time', 'price', ['predicted', 'actual'])
