@@ -110,6 +110,8 @@ def pre_yahoo_data():
     forecast_test_set = model.predict(test_set.iloc[:, [1]])
     fig1 = model.plot(forecast_test_set)
     fig2 = model.plot_components(forecast_test_set)
+    model_forecast_dict = {'forecast': forecast_test_set, 'model': model}
+    return model_forecast_dict
 
 
 def forecast_model():
@@ -122,7 +124,7 @@ def forecast_model():
     test_set = pd.DataFrame(train_test_dict.get('x_test'))
     test_set.columns = ['y', 'ds']
 
-    model = create_fit_prophet_model(df_prop, 0.8)
+    model = create_fit_prophet_model(train_set, 0.8)  # default 0.05
 
     # =====================================================================================
     # =====forcast the future starting from the last date of the dataset==============
@@ -131,13 +133,7 @@ def forecast_model():
     future_values_to_predict = pre_future_val(pred_start_date, 48)
     forecast = model.predict(future_values_to_predict)
 
-    forecast_two = model.predict(df_prop)
-    fig = model.plot(forecast_two)
-
     fig = model.plot(forecast)
-
-    forecast['yhat_upper'].plot()
-
     fig2_for_comp = model.plot_components(forecast)
 
     fig_forcast = model.plot(forecast)
@@ -150,14 +146,17 @@ def forecast_model():
     fig1 = model.plot(forecast_test_set)
     fig2 = model.plot_components(forecast_test_set)
 
+    model_forecast_dict = {'forecast': forecast_test_set, 'model': model}
+    return model_forecast_dict
+
+
+def calc_mae(test_set, forecast_test_set):
     # calculate MAE between expected and predicted values for december
     y_true = test_set['y']
     y_pred = forecast_test_set['yhat']
     mae = mean_absolute_error(y_true, y_pred)
     print('MAE: %.3f' % mae)
-
-    model_forecast_dict = {'forecast': forecast, 'model': model}
-    return model_forecast_dict
+    return mae
 
 
 def run():
@@ -167,5 +166,13 @@ def run():
 
     save_prediction_csv(forecast.iloc[:, [0, 1, 2, 3, 4, 5, 18]])
 
+    fig1 = model.plot(forecast)
+    fig2 = model.plot_components(forecast)
+
+
+def main():
+    model_forecast_dict = pre_yahoo_data()
+    model = model_forecast_dict.get('model')
+    forecast = model_forecast_dict.get('forecast')
     fig1 = model.plot(forecast)
     fig2 = model.plot_components(forecast)
