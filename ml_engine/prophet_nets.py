@@ -9,6 +9,7 @@ from datetime import datetime as dt, timezone as tz, timedelta as td
 import numpy as np
 from sklearn.metrics import mean_absolute_error
 from extract_and_load import extract_data_yahoo
+from prophet.plot import add_changepoints_to_plot
 
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(''))))
 sys.path.append(root + '/codes/TRADER-ENGINE/trader_engine')
@@ -26,8 +27,8 @@ def prep_prophet_training_input():
 
     df_prop.index = pd.to_datetime(df.index, utc=True, unit='ms').tz_convert('europe/rome')
     df_prop['ds'] = pd.to_datetime(df_prop.index).tz_localize(None)
-    df_prop = df.iloc[:, [3, 5]]
-    df_prop = df_prop.rename(columns={'CLOSE': 'y', 'ds': 'ds'})
+    df_prop = df.iloc[:, [3, 4, 5]]
+    df_prop = df_prop.rename(columns={'CLOSE': 'y', 'ds': 'ds', 'VOLUME': 'cap'})
     df_prop.reset_index(drop=True, inplace=True)
     return df_prop
 
@@ -52,8 +53,8 @@ def pre_future_val(pred_start_date, prediction_length):
     return future_values_to_predict
 
 
-def create_fit_prophet_model(df):
-    model = Prophet()
+def create_fit_prophet_model(df, change_pt_prior_scale):
+    model = Prophet(changepoint_prior_scale=change_pt_prior_scale)
     model.fit(df)
     return model
 
@@ -121,16 +122,26 @@ def forecast_model():
     test_set = pd.DataFrame(train_test_dict.get('x_test'))
     test_set.columns = ['y', 'ds']
 
-    model = create_fit_prophet_model(train_set)
+    model = create_fit_prophet_model(df_prop, 0.8)
 
     # =====================================================================================
     # =====forcast the future starting from the last date of the dataset==============
     # ======================================================================================
-    pred_start_date = dt.strptime(str(test_set.iloc[-1]['ds']), '%Y-%m-%d %H:%M:%S')
-    future_values_to_predict = pre_future_val(pred_start_date, 192)
+    pred_start_date = dt.strptime(str(df_prop.iloc[-1]['ds']), '%Y-%m-%d %H:%M:%S')
+    future_values_to_predict = pre_future_val(pred_start_date, 48)
     forecast = model.predict(future_values_to_predict)
-    fig_forcast = model.plot(forecast)
+
+    forecast_two = model.predict(df_prop)
+    fig = model.plot(forecast_two)
+
+    fig = model.plot(forecast)
+
+    forecast['yhat_upper'].plot()
+
     fig2_for_comp = model.plot_components(forecast)
+
+    fig_forcast = model.plot(forecast)
+    a = add_changepoints_to_plot(fig_forcast.gca(), model, forecast)
     # ==================================================================
     # =====forcast using hold out method and evaluate the performance====
     # ==================================================================
