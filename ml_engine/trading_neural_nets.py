@@ -4,11 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import extract_and_load.load_data as ld
 from tensorflow.python.framework.ops import disable_eager_execution
+from datetime import datetime as dt, timezone as tz, timedelta as td
 import utility.visualization_util as vis
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import random
 
 
 def normalize_data(data_f):
@@ -220,6 +222,8 @@ def train_lstm_model():
     trained_model = {'model': model,
                      'x_test': x_test,
                      'y_test': y_test,
+                     'x_train': x_train,
+                     'y_train': y_train,
                      'date_train': date_train,
                      'date_test': date_test,
                      'scaler': scaler
@@ -227,7 +231,7 @@ def train_lstm_model():
     return trained_model
 
 
-def format_prediction_data(df, y_test, date_test):
+def format_prediction_data(df):
     predicted = df.copy()
     test_predicted = []
 
@@ -235,31 +239,62 @@ def format_prediction_data(df, y_test, date_test):
         test_predicted.append(i[0][0])
 
     df_prediction = pd.DataFrame(test_predicted)
-    df_prediction['actual'] = y_test
-
-    df_prediction['date_time'] = pd.DataFrame(date_test)
-
-    df_prediction.columns = ['predictions', 'Close', 'Date']
+    df_prediction.columns = ['predictions']
     return df_prediction
+
+
+def pre_future_val(pred_start_date, prediction_length):
+    future_values_to_predict = pd.date_range(start=pred_start_date,
+                                             periods=prediction_length,
+                                             freq='30min')
+
+    future_values_to_predict = pd.DataFrame(future_values_to_predict)
+    future_values_to_predict.columns = ['future']
+    return future_values_to_predict
+
+
+def pred_further(x_date_last):
+    # now = dt.now()
+    # pred_start_date = dt.strptime(x_date_last, '%Y-%m-%d %H:%M:%S')
+    future_values_to_predict = pre_future_val(x_date_last, 240)
+    x_test_fut = np.asarray(future_values_to_predict)
+    # y = np.asarray(y)
+    return x_test_fut
+
+
+def generate_random_num():
+    randomlist = []
+    rand_num = []
+    for i in range(0, 240):
+        # n = np.asarray(random.randint(0, 1))
+        # rand_num.append(np.asarray(n))
+        # randomlist.append(rand_num)
+        n = random.randint(0, 1)
+        rand_num.append(n)
+        randomlist.append(rand_num)
+    x_test_fut = np.asarray(randomlist)
+    return randomlist
 
 
 def make_prediction():
     trained_model_resp = train_lstm_model()
 
     trained_model = trained_model_resp.get('model')
+
     x_test = trained_model_resp.get('x_test')
     y_test = trained_model_resp.get('y_test')
+
+    x_train = trained_model_resp.get('x_train')
+    y_train = trained_model_resp.get('y_train')
 
     date_train = trained_model_resp.get('date_train')
     date_test = trained_model_resp.get('date_test')
 
+    prediction_df = make_future_prediction(trained_model, x_test)
+
     scaler = trained_model_resp.get('scaler')
-
-    predicted = trained_model.predict(x_test)
-
-    predicted_df = format_prediction_data(predicted, y_test, date_test)
-
-    predicted_val = {'predicted_df': predicted_df,
+    predicted_val = {'predicted_df': prediction_df,
+                     'y_test': y_test,
                      'scaler': scaler
                      }
     # df_predicted.info()
@@ -267,17 +302,33 @@ def make_prediction():
     return predicted_val
 
 
+def make_future_prediction(trained_model, x_test):
+    predicted = trained_model.predict(x_test)
+    prediction_list = []
+    to_predict = predicted[-1]
+    for i in range(240):
+        next_val = trained_model.predict(to_predict)
+        to_predict = next_val[0]
+        prediction_list.append(to_predict)
+        i += 1
+
+    tot_prediction = np.concatenate([predicted, np.asarray(prediction_list)])
+    predicted_df = format_prediction_data(tot_prediction)
+    return predicted_df
+
+
 def plot_data():
     predicted_data_f = make_prediction()
 
     scaler = predicted_data_f.get('scaler')
     predicted_df = predicted_data_f.get('predicted_df')
+    predicted_df['actual'] = predicted_data_f.get('y_test')
 
     # pred_re_scaled = scaler.inverse_transform(predicted_df.iloc[:, [0, 1]])
     # close_re_scaled = scaler.inverse_transform(predicted_df['Close'])
 
     plt.figure(figsize=(20, 10))
-    #plt.plot(predicted_df['Close'])
+    # plt.plot(predicted_df['Close'])
     plt.plot(predicted_df[['predictions', 'Close']])
 
     plt.pause(20)  # very important to display the plot
