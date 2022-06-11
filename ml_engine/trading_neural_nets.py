@@ -16,7 +16,8 @@ def normalize_data(data_f):
     training_data = data_f.copy()
     sc = MinMaxScaler(feature_range=(0, 1))
     training_set_scaled = sc.fit_transform(training_data)
-    return training_set_scaled
+    train_test_scaled_dict = {'training_set_scaled': training_set_scaled, 'scaler': sc}
+    return train_test_scaled_dict
 
 
 def create_traning_test_set(df, scaled_tranig_set, date_time):
@@ -133,11 +134,12 @@ def create_model():
 
 
 def create_model_from_data(splited_data):
-    feature_train_test = reshape_features(splited_data['x_train'], splited_data['x_test'])
-    keras_model = create_lstm_modle(feature_train_test['x_train'])
+    x_train_test = reshape_features(splited_data['x_train'], splited_data['x_test'])
+    keras_model = create_lstm_modle(x_train_test['x_train'])
 
-    model_forecast_dict = {'feature_train_test': feature_train_test, 'model': keras_model,
-                           'feat_target_train_test_set': splited_data}
+    model_forecast_dict = {'x_train_test_reshaped': x_train_test,
+                           'model': keras_model
+                           }
     return model_forecast_dict
 
 
@@ -170,7 +172,10 @@ def main():
     df = df.iloc[:, 3:]
 
     df = df.sort_index(ascending=True, axis=0)
-    norm_data = normalize_data(df)
+    scaled_data = normalize_data(df)
+
+    scaler = scaled_data.get('scaler')
+    norm_data = scaled_data.get('training_set_scaled')
 
     df['date_time'] = pd.to_datetime(df.index, utc=True, unit='ms').tz_convert('europe/rome')
     df.reset_index(drop=True, inplace=True)
@@ -179,43 +184,103 @@ def main():
     y = training_test_data['target']
     date_time = training_test_data['date_time']
 
-    splited_data = split_data(training_test_data, date_time)
+    x_y_train_test = split_data(training_test_data, date_time)
 
-    z_train = splited_data['z_train']  # date of train data
-    z_test = splited_data['z_test']  # date of the test data
-
-    model_forecast_dict = create_model_from_data(splited_data)
+    model_forecast_dict = create_model_from_data(x_y_train_test)
 
     model = model_forecast_dict.get('model')
-    feature_train_test = model_forecast_dict.get('feature_train_test')
-    feat_target_train_test_set = model_forecast_dict.get('feat_target_train_test_set')
+    x_train_test_reshaped = model_forecast_dict.get('x_train_test_reshaped')
+
+    model_train_test_ds_dict = {'model': model,
+                                'x_train_test_reshaped': x_train_test_reshaped,
+                                'x_y_train_test': x_y_train_test,
+                                'scalar': scaler
+                                }
+    return model_train_test_ds_dict
+
+
+def train_lstm_model():
+    model_train_test_ds_dict = main()
+
+    model = model_train_test_ds_dict.get('model')
+    x_train = model_train_test_ds_dict.get('x_train_test_reshaped')['x_train']
+    y_train = model_train_test_ds_dict.get('x_y_train_test')['y_train']
+
+    x_test = model_train_test_ds_dict.get('x_y_train_test')['x_test']
+    y_test = model_train_test_ds_dict.get('x_y_train_test')['y_test']
+
+    date_train = model_train_test_ds_dict.get('x_y_train_test')['z_train']  # date of train data
+    date_test = model_train_test_ds_dict.get('x_y_train_test')['z_test']  # date of the test data
+
+    scaler = model_train_test_ds_dict.get('scaler')
 
     # train the model
-    history = train_data(model, feature_train_test['x_train'], feat_target_train_test_set['y_train'])
+    history = train_data(model, x_train, y_train)
 
-    predicted = model.predict(feat_target_train_test_set['x_test'])
+    trained_model = {'model': model,
+                     'x_test': x_test,
+                     'y_test': y_test,
+                     'date_train': date_train,
+                     'date_test': date_test,
+                     'scaler': scaler
+                     }
+    return trained_model
 
+
+def format_prediction_data(df, y_test, date_test):
+    predicted = df.copy()
     test_predicted = []
 
     for i in predicted:
         test_predicted.append(i[0][0])
 
-    df_predicted = pd.DataFrame(test_predicted)
+    df_prediction = pd.DataFrame(test_predicted)
+    df_prediction['actual'] = y_test
 
-    df_predicted['actual'] = feat_target_train_test_set['y_test']
+    df_prediction['date_time'] = pd.DataFrame(date_test)
 
-    df_predicted['date_time'] = pd.DataFrame(z_test)
+    df_prediction.columns = ['predictions', 'Close', 'Date']
+    return df_prediction
 
-    df_predicted.columns = ['predictions', 'Close', 'Date']
 
-    df_predicted = df_predicted.set_index('Date')
+def make_prediction():
+    trained_model_resp = train_lstm_model()
 
-    # df_predicted['Date'] = pd.to_datetime(df_predicted.index, utc=True, unit='ms').tz_convert('europe/rome')
+    trained_model = trained_model_resp.get('model')
+    x_test = trained_model_resp.get('x_test')
+    y_test = trained_model_resp.get('y_test')
 
-    df_predicted.info()
+    date_train = trained_model_resp.get('date_train')
+    date_test = trained_model_resp.get('date_test')
 
-    df_predicted.memory_usage()
-    return df_predicted
+    scaler = trained_model_resp.get('scaler')
+
+    predicted = trained_model.predict(x_test)
+
+    predicted_df = format_prediction_data(predicted, y_test, date_test)
+
+    predicted_val = {'predicted_df': predicted_df,
+                     'scaler': scaler
+                     }
+    # df_predicted.info()
+    # df_predicted.memory_usage()
+    return predicted_val
+
+
+def plot_data():
+    predicted_data_f = make_prediction()
+
+    scaler = predicted_data_f.get('scaler')
+    predicted_df = predicted_data_f.get('predicted_df')
+
+    # pred_re_scaled = scaler.inverse_transform(predicted_df.iloc[:, [0, 1]])
+    # close_re_scaled = scaler.inverse_transform(predicted_df['Close'])
+
+    plt.figure(figsize=(20, 10))
+    #plt.plot(predicted_df['Close'])
+    plt.plot(predicted_df[['predictions', 'Close']])
+
+    plt.pause(20)  # very important to display the plot
 
 
 if __name__ == '__main__':
@@ -223,6 +288,3 @@ if __name__ == '__main__':
     # Plot the data
     res = interactive_plot(df_predicted, "Original Vs Prediction")
     res.show()
-
-# sers = [df_predicted['predictions'], df_predicted['Close']]
-# vis.plot_data_many(sers, 'predicted vs actual', 'time', 'price', ['predicted', 'actual'])
