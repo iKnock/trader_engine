@@ -6,6 +6,9 @@ import extract_and_load.load_data as ld
 from tensorflow.python.framework.ops import disable_eager_execution
 import utility.visualization_util as vis
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 
 def normalize_data(data_f):
@@ -138,10 +141,35 @@ def create_model_from_data(splited_data):
     return model_forecast_dict
 
 
-if __name__ == '__main__':
+# Function to plot interactive plots using Plotly Express
+def interactive_plot(df, title):
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    for i in df.columns[0:]:
+        # fig.add_scatter(x=df_predicted['Date'], y=df_predicted[i], name=i)
+        fig.add_trace(
+            go.Scatter(x=df.index, y=df['Close'], name="Actual"),
+            secondary_y=False)
+        type(i)
+        fig.add_trace(
+            go.Scatter(x=df.index, y=df['predictions'], name="Predicted"),
+            secondary_y=False)
+
+        # Adding title text to the figure
+        fig.update_layout(
+            title_text=title
+        )
+
+    # fig = px.line(title=title)
+    # for i in df.columns[1:]:
+    #     fig.add_scatter(x=df.index, y=df[i], name=i)
+    return fig
+
+
+def main():
     df = ld.load_data()
     df = df.iloc[:, 3:]
 
+    df = df.sort_index(ascending=True, axis=0)
     norm_data = normalize_data(df)
 
     df['date_time'] = pd.to_datetime(df.index, utc=True, unit='ms').tz_convert('europe/rome')
@@ -153,8 +181,8 @@ if __name__ == '__main__':
 
     splited_data = split_data(training_test_data, date_time)
 
-    z_train = splited_data['z_train']
-    z_test = splited_data['z_test']
+    z_train = splited_data['z_train']  # date of train data
+    z_test = splited_data['z_test']  # date of the test data
 
     model_forecast_dict = create_model_from_data(splited_data)
 
@@ -162,6 +190,7 @@ if __name__ == '__main__':
     feature_train_test = model_forecast_dict.get('feature_train_test')
     feat_target_train_test_set = model_forecast_dict.get('feat_target_train_test_set')
 
+    # train the model
     history = train_data(model, feature_train_test['x_train'], feat_target_train_test_set['y_train'])
 
     predicted = model.predict(feat_target_train_test_set['x_test'])
@@ -177,11 +206,23 @@ if __name__ == '__main__':
 
     df_predicted['date_time'] = pd.DataFrame(z_test)
 
-    df_predicted.columns = ['predicted', 'actual', 'date_time']
-    df_predicted.plot()
+    df_predicted.columns = ['predictions', 'Close', 'Date']
 
-    df_predicted.plot()
-    plt.show()
+    df_predicted = df_predicted.set_index('Date')
 
-    sers = [df_predicted['predicted'], df_predicted['actual']]
-    vis.plot_data_many(sers, 'predicted vs actual', 'time', 'price', ['predicted', 'actual'])
+    # df_predicted['Date'] = pd.to_datetime(df_predicted.index, utc=True, unit='ms').tz_convert('europe/rome')
+
+    df_predicted.info()
+
+    df_predicted.memory_usage()
+    return df_predicted
+
+
+if __name__ == '__main__':
+    df_predicted = main()
+    # Plot the data
+    res = interactive_plot(df_predicted, "Original Vs Prediction")
+    res.show()
+
+# sers = [df_predicted['predictions'], df_predicted['Close']]
+# vis.plot_data_many(sers, 'predicted vs actual', 'time', 'price', ['predicted', 'actual'])
