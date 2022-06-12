@@ -290,7 +290,9 @@ def make_prediction():
     date_train = trained_model_resp.get('date_train')
     date_test = trained_model_resp.get('date_test')
 
-    prediction_df = make_future_prediction(trained_model, x_test)
+    # prediction_df = make_future_prediction(trained_model, x_test)
+    prediction_df = trained_model.predict(x_test)
+    prediction_df = format_prediction_data(prediction_df)
 
     scaler = trained_model_resp.get('scaler')
     predicted_val = {'predicted_df': prediction_df,
@@ -303,10 +305,10 @@ def make_prediction():
 
 
 def make_future_prediction(trained_model, x_test):
-    predicted = trained_model.predict(x_test)
+    predicted = trained_model.predict(x_test)  # batch_size=n_batch
     prediction_list = []
     to_predict = predicted[-1]
-    for i in range(240):
+    for i in range(480):
         next_val = trained_model.predict(to_predict)
         to_predict = next_val[0]
         prediction_list.append(to_predict)
@@ -323,6 +325,8 @@ def plot_data():
     scaler = predicted_data_f.get('scaler')
     predicted_df = predicted_data_f.get('predicted_df')
     predicted_df['actual'] = predicted_data_f.get('y_test')
+
+    type(np.asarray(predicted_data_f.get('predicted_df'))[[-3, -2 - 1], :])
 
     # pred_re_scaled = scaler.inverse_transform(predicted_df.iloc[:, [0, 1]])
     # close_re_scaled = scaler.inverse_transform(predicted_df['Close'])
