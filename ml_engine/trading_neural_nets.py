@@ -329,7 +329,7 @@ def plot_data():
 
     plt.figure(figsize=(20, 10))
     # plt.plot(predicted_df['Close'])
-    plt.plot(predicted_df[['predictions', 'Close']])
+    plt.plot(predicted_df[['predictions']])
 
     plt.pause(20)  # very important to display the plot
 
