@@ -290,8 +290,8 @@ def make_prediction():
     date_train = trained_model_resp.get('date_train')
     date_test = trained_model_resp.get('date_test')
 
-    # prediction_df = make_future_prediction(trained_model, x_test)
-    prediction_df = trained_model.predict(x_test)
+    prediction_df = make_future_prediction(trained_model, x_test)
+    # prediction_df = trained_model.predict(x_test,batch_size=n_batch)
     prediction_df = format_prediction_data(prediction_df)
 
     scaler = trained_model_resp.get('scaler')
@@ -333,7 +333,7 @@ def plot_data():
 
     plt.figure(figsize=(20, 10))
     # plt.plot(predicted_df['Close'])
-    plt.plot(predicted_df[['predictions']])
+    plt.plot(predicted_data_f.get('y_test'))
 
     plt.pause(20)  # very important to display the plot
 
