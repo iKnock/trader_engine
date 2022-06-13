@@ -1,7 +1,6 @@
 import numpy as np
 import transformer.indicators as indicator
 import copy
-import pandas as pd
 import transformer.renko as rnk
 import extract_and_load.load_data as ld
 from datetime import datetime as dt, timezone as tz, timedelta as td
