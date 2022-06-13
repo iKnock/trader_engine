@@ -73,6 +73,7 @@ def reshape_features(train, test):
 
 def create_lstm_modle(x_train_data):
     x_train = x_train_data
+
     # Create the model
     inputs = keras.layers.Input(shape=(x_train.shape[1], x_train.shape[2]))
     x = keras.layers.LSTM(150, return_sequences=True)(inputs)
@@ -86,6 +87,28 @@ def create_lstm_modle(x_train_data):
     model.compile(optimizer='adam', loss="mse")
     model.summary()
     return model
+
+
+def create_lstm_modle_multi_var(x_train_data):
+    x_train = x_train_data
+
+    # reshape training into [samples, timesteps, features]
+    X, y = x_train[:, [0, 1]], x_train[:, [2, 3]]
+    X = X.reshape(X.shape[0], 1, X.shape[1])
+
+    # Create the model
+    inputs = keras.layers.Input(shape=(X.shape[1], X.shape[2]))
+    x = keras.layers.LSTM(150, return_sequences=True)(inputs)
+    x = keras.layers.Dropout(0.3)(x)
+    x = keras.layers.LSTM(150, return_sequences=True)(x)
+    x = keras.layers.Dropout(0.3)(x)
+    x = keras.layers.LSTM(150, return_sequences=True)(x)
+    outputs = keras.layers.Dense(1, activation='linear')(x)
+
+    model = keras.Model(inputs=inputs, outputs=outputs)
+    model.compile(optimizer='adam', loss="mse")
+    model.summary()
+    return model, X, y
 
 
 def train_data(model, x_train, y_train):

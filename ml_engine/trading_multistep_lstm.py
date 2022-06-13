@@ -83,7 +83,7 @@ def fit_lstm(train, n_lag, n_seq, n_batch, nb_epoch, n_neurons):
     model.compile(loss='mean_squared_error', optimizer='adam')
     # fit network
     for i in range(nb_epoch):
-        model.fit(X, y, epochs=20, batch_size=n_batch, verbose=0, shuffle=False)
+        model.fit(X, y, epochs=1, batch_size=n_batch, verbose=0, shuffle=False)
         model.reset_states()
         print("======================================================")
         print(i)
@@ -175,9 +175,9 @@ def run():
     # configure
     n_lag = 1
     n_seq = 3
-    n_test = 10
-    n_epochs = 50
-    n_batch = 31
+    n_test = 4000
+    n_epochs = 20
+    n_batch = 1
     n_neurons = 1
     # prepare data
     scaler, train, test = prepare_data(ds_series, n_test, n_lag, n_seq)
@@ -186,17 +186,35 @@ def run():
     # make forecasts
     forecasts = make_forecasts(model, n_batch, train, test, n_lag, n_seq)
     # inverse transform forecasts and test
-    forecasts = inverse_transform(ds_series, forecasts, scaler, n_test + 2)
+    forecasts_original = inverse_transform(ds_series, forecasts, scaler, n_test + 2)
     actual = [row[n_lag:] for row in test]
     actual = inverse_transform(ds_series, actual, scaler, n_test + 2)
     # evaluate forecasts
-    evaluate_forecasts(actual, forecasts, n_lag, n_seq)
+    evaluate_forecasts(actual, forecasts_original, n_lag, n_seq)
     # plot forecasts
-    plot_forecasts(ds_series, forecasts, n_test + 2)
+    plot_forecasts(ds_series, forecasts_original, n_test + 2)
 
-    whole_data_set = df.loc[:, :]['CLOSE']
-    whole_data_set.shape
-    whole_data_set.head()
+
+def my_method(train, test):
+    new_model, x, y = nn.create_lstm_modle_multi_var(train)
+    history = nn.train_data(new_model, x, y)
+
+    # reshape training into [samples, timesteps, features]
+    x_test, y_test = test[:, [0, 1]], test[:, [2, 3]]
+    x_test = x_test.reshape(x_test.shape[0], 1, x_test.shape[1])
+
+    prediction_df = new_model.predict(x_test)
+    prediction_df = nn.format_prediction_data(prediction_df)
+
+    test_predicted = []
+
+    for i in prediction_df:
+        test_predicted.append(i[0][0])
+
+    pyplot.figure(figsize=(20, 10))
+    # pyplot.plot(x[:,0])
+    pyplot.plot(prediction_df['predictions'])
+    pyplot.pause(20)
 
 # if __name__ == '__main__':
 #     run()
