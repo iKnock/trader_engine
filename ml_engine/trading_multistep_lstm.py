@@ -1,58 +1,202 @@
-from tensorflow import keras
-from sklearn.preprocessing import MinMaxScaler
-import numpy as np
-import matplotlib.pyplot as plt
 import extract_and_load.load_data as ld
 import ml_engine.trading_neural_nets as nn
-import pandas as pd
+
+from pandas import DataFrame
+from pandas import Series
+from pandas import concat
+from pandas import read_csv
+
+from tensorflow.keras.layers import LSTM, Dense
+from tensorflow.keras.models import Sequential
+
+from sklearn.metrics import mean_squared_error
+from sklearn.preprocessing import MinMaxScaler
+from math import sqrt
+from matplotlib import pyplot
+from numpy import array
 
 
-def create_multistep_traning_test_set(df, scaled_tranig_set, date_time):
-    price_volume_df = df.copy()
-    # training_set_scaled = scaled_tranig_set.copy()
-    # Create the training and testing data, training data contains present day and previous day values
-    training_test_data = {}
-    x = []
-    y = []
-    date_time_new = []
-    for i in range(1, len(price_volume_df)):
-        x.append(scaled_tranig_set[i - 1:i, 0])
-        y.append(scaled_tranig_set[i, 0])
-        date_time_new.append(date_time[i])
+# convert time series into supervised learning problem
+def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
+    n_vars = 1 if type(data) is list else data.shape[1]
+    df = DataFrame(data)
+    cols, names = list(), list()
+    # input sequence (t-n, ... t-1)
+    for i in range(n_in, 0, -1):
+        cols.append(df.shift(i))
+        names += [('var%d(t-%d)' % (j + 1, i)) for j in range(n_vars)]
+    # forecast sequence (t, t+1, ... t+n)
+    for i in range(0, n_out):
+        cols.append(df.shift(-i))
+        if i == 0:
+            names += [('var%d(t)' % (j + 1)) for j in range(n_vars)]
+        else:
+            names += [('var%d(t+%d)' % (j + 1, i)) for j in range(n_vars)]
+    # put it all together
+    agg = concat(cols, axis=1)
+    agg.columns = names
+    # drop rows with NaN values
+    if dropnan:
+        agg.dropna(inplace=True)
+    return agg
 
-    training_test_data['feature'] = x
-    training_test_data['target'] = y
-    # training_test_data['date_time'] = date_time
-    return training_test_data
+
+# create a differenced series
+def difference(dataset, interval=1):
+    diff = list()
+    for i in range(interval, len(dataset)):
+        value = dataset[i] - dataset[i - interval]
+        diff.append(value)
+    return Series(diff)
+
+
+# transform series into train and test sets for supervised learning
+def prepare_data(series, n_test, n_lag, n_seq):
+    # extract raw values
+    raw_values = series.values
+    # transform data to be stationary
+    diff_series = difference(raw_values, 1)
+    diff_values = diff_series.values
+    diff_values = diff_values.reshape(len(diff_values), 1)
+    # rescale values to -1, 1
+    scaler = MinMaxScaler(feature_range=(-1, 1))
+    scaled_values = scaler.fit_transform(diff_values)
+    scaled_values = scaled_values.reshape(len(scaled_values), 1)
+    # transform into supervised learning problem X, y
+    supervised = series_to_supervised(scaled_values, n_lag, n_seq)
+    supervised_values = supervised.values
+    # split into train and test sets
+    train, test = supervised_values[0:-n_test], supervised_values[-n_test:]
+    return scaler, train, test
+
+
+# fit an LSTM network to training data
+def fit_lstm(train, n_lag, n_seq, n_batch, nb_epoch, n_neurons):
+    # reshape training into [samples, timesteps, features]
+    X, y = train[:, 0:n_lag], train[:, n_lag:]
+    X = X.reshape(X.shape[0], 1, X.shape[1])
+    print(X)
+    # design network
+    model = Sequential()
+    model.add(LSTM(n_neurons, batch_input_shape=(n_batch, X.shape[1], X.shape[2]), stateful=True))
+    model.add(Dense(y.shape[1]))
+    model.compile(loss='mean_squared_error', optimizer='adam')
+    # fit network
+    for i in range(nb_epoch):
+        model.fit(X, y, epochs=20, batch_size=n_batch, verbose=0, shuffle=False)
+        model.reset_states()
+        print("======================================================")
+        print(i)
+    return model
+
+
+# make one forecast with an LSTM,
+def forecast_lstm(model, X, n_batch):
+    # reshape input pattern to [samples, timesteps, features]
+    X = X.reshape(1, 1, len(X))
+    # make forecast
+    forecast = model.predict(X, batch_size=n_batch)
+    # convert to array
+    return [x for x in forecast[0, :]]
+
+
+# evaluate the persistence model
+def make_forecasts(model, n_batch, train, test, n_lag, n_seq):
+    forecasts = list()
+    for i in range(len(test)):
+        X, y = test[i, 0:n_lag], test[i, n_lag:]
+        # make forecast
+        forecast = forecast_lstm(model, X, n_batch)
+        # store the forecast
+        forecasts.append(forecast)
+    return forecasts
+
+
+# invert differenced forecast
+def inverse_difference(last_ob, forecast):
+    # invert first forecast
+    inverted = list()
+    inverted.append(forecast[0] + last_ob)
+    # propagate difference forecast using inverted first value
+    for i in range(1, len(forecast)):
+        inverted.append(forecast[i] + inverted[i - 1])
+    return inverted
+
+
+# inverse data transform on forecasts
+def inverse_transform(series, forecasts, scaler, n_test):
+    inverted = list()
+    for i in range(len(forecasts)):
+        # create array from forecast
+        forecast = array(forecasts[i])
+        forecast = forecast.reshape(1, len(forecast))
+        # invert scaling
+        inv_scale = scaler.inverse_transform(forecast)
+        inv_scale = inv_scale[0, :]
+        # invert differencing
+        index = len(series) - n_test + i - 1
+        last_ob = series.values[index]
+        inv_diff = inverse_difference(last_ob, inv_scale)
+        # store
+        inverted.append(inv_diff)
+    return inverted
+
+
+# evaluate the RMSE for each forecast time step
+def evaluate_forecasts(test, forecasts, n_lag, n_seq):
+    for i in range(n_seq):
+        actual = [row[i] for row in test]
+        predicted = [forecast[i] for forecast in forecasts]
+        rmse = sqrt(mean_squared_error(actual, predicted))
+        print('t+%d RMSE: %f' % ((i + 1), rmse))
+
+
+# plot the forecasts in the context of the original dataset
+def plot_forecasts(series, forecasts, n_test):
+    # plot the entire dataset in blue
+    pyplot.plot(series.values)
+    # plot the forecasts in red
+    for i in range(len(forecasts)):
+        off_s = len(series) - n_test + i - 1
+        off_e = off_s + len(forecasts[i]) + 1
+        xaxis = [x for x in range(off_s, off_e)]
+        yaxis = [series.values[off_s]] + forecasts[i]
+        pyplot.plot(xaxis, yaxis, color='red')
+    # show the plot
+    pyplot.show()
 
 
 def run():
     df = ld.load_data()
     df = df.iloc[:, [3]]
 
-    norm_data = nn.normalize_data(df)
+    ds_series = Series(df['CLOSE'], index=df.index)
 
-    training_test_data = create_multistep_traning_test_set(df, norm_data, df.index)
+    # configure
+    n_lag = 1
+    n_seq = 3
+    n_test = 10
+    n_epochs = 50
+    n_batch = 31
+    n_neurons = 1
+    # prepare data
+    scaler, train, test = prepare_data(ds_series, n_test, n_lag, n_seq)
+    # fit model
+    model = fit_lstm(train, n_lag, n_seq, n_batch, n_epochs, n_neurons)
+    # make forecasts
+    forecasts = make_forecasts(model, n_batch, train, test, n_lag, n_seq)
+    # inverse transform forecasts and test
+    forecasts = inverse_transform(ds_series, forecasts, scaler, n_test + 2)
+    actual = [row[n_lag:] for row in test]
+    actual = inverse_transform(ds_series, actual, scaler, n_test + 2)
+    # evaluate forecasts
+    evaluate_forecasts(actual, forecasts, n_lag, n_seq)
+    # plot forecasts
+    plot_forecasts(ds_series, forecasts, n_test + 2)
 
-    x = []
-    y = []
-    date_fr = np.asarray(df)
-    date_fr.shape
-    # for i in range(7, len(df) - 7):
-    #     x.append(date_fr[i - 7:i])
-    #     y.append(date_fr[i, i+7])
-    date_fr = np.asarray(df)
-    for i in range(7, len(df) - 7):
-        x.append(date_fr[i - 7:i, 0])
-        y.append(date_fr[i, 0])
+    whole_data_set = df.loc[:, :]['CLOSE']
+    whole_data_set.shape
+    whole_data_set.head()
 
-    pd.DataFrame(x)
-
-    # splited_data = split_data(training_test_data)
-
-    # feature_train_test = reshape_features(splited_data['x_train'], splited_data['x_test'])
-    # return splited_data
-
-
-if __name__ == '__main__':
-    run()
+# if __name__ == '__main__':
+#     run()
