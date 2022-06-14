@@ -2,7 +2,7 @@ import numpy as np
 import extract_and_load.load_data as ld
 from datetime import datetime as dt, timezone as tz, timedelta as td
 import utility.constants as const
-import transformer.transform_data as trans_data
+import transformer.transform_data as transform_data
 
 
 def breakout(data_f):
@@ -71,6 +71,6 @@ if __name__ == '__main__':
     df = ld.load_data()
     now_str = dt.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     df = ld.filter_df_by_interval(df, const.since, now_str)
-    df = trans_data.cal_indicators(df)
+    df = transform_data.cal_indicators(df)
     br_out = breakout(df)
     print(br_out)

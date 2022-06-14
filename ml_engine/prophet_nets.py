@@ -120,9 +120,9 @@ def forecast_model():
     train_test_dict = create_train_test_set(df_prop)
 
     train_set = pd.DataFrame(train_test_dict.get('x_train'))
-    train_set.columns = ['y', 'ds']
+    train_set.columns = ['y', 'cap', 'ds']
     test_set = pd.DataFrame(train_test_dict.get('x_test'))
-    test_set.columns = ['y', 'ds']
+    test_set.columns = ['y', 'cap', 'ds']
 
     model = create_fit_prophet_model(train_set, 0.8)  # default 0.05
 
