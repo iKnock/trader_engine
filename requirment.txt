@@ -7,3 +7,4 @@ pip install bs4
 pip install ccxt
 pip install matplotlib
 pip install stocktrends
+pip install statsmodels
