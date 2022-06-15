@@ -1,7 +1,6 @@
 import extract_and_load.load_data as ld
 import pandas as pd
 from prophet import Prophet
-from matplotlib import pyplot
 from pathlib import Path
 import os
 import sys
@@ -10,6 +9,7 @@ import numpy as np
 from sklearn.metrics import mean_absolute_error
 from extract_and_load import extract_data_yahoo
 from prophet.plot import add_changepoints_to_plot
+from matplotlib import pyplot
 
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(''))))
 sys.path.append(root + '/codes/TRADER-ENGINE/trader_engine')
@@ -38,7 +38,7 @@ def create_train_test_set(df):
     # Split the data
     split = int(0.7 * len(x))
     x_train = x[:split]
-    x_test = x[:split]
+    x_test = x[split:]
     train_test_dict = {'x_train': x_train, 'x_test': x_test}
     return train_test_dict
 
@@ -142,9 +142,14 @@ def forecast_model():
     # =====forcast using hold out method and evaluate the performance====
     # ==================================================================
 
-    forecast_test_set = model.predict(test_set.iloc[:, [1]])
+    forecast_test_set = model.predict(test_set.iloc[:, [2]])
     fig1 = model.plot(forecast_test_set)
     fig2 = model.plot_components(forecast_test_set)
+
+    pyplot.figure(figsize=(20, 10))
+    # pyplot.plot(x[:,0])
+    pyplot.plot(df_prop['y'])
+    pyplot.pause(20)
 
     model_forecast_dict = {'forecast': forecast_test_set, 'model': model}
     return model_forecast_dict

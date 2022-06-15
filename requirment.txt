@@ -1,0 +1,9 @@
+conda install pystan==2.19.1.1
+conda install prophet
+conda install requests
+pip install sklearn
+pip install yfinance
+pip install bs4
+pip install ccxt
+pip install matplotlib
+pip install stocktrends
