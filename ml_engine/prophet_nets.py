@@ -129,8 +129,8 @@ def forecast_model():
     # =====================================================================================
     # =====forcast the future starting from the last date of the dataset==============
     # ======================================================================================
-    pred_start_date = dt.strptime(str(df_prop.iloc[-1]['ds']), '%Y-%m-%d %H:%M:%S')
-    future_values_to_predict = pre_future_val(pred_start_date, 48)
+    pred_start_date = dt.strptime(str(train_set.iloc[-1]['ds']), '%Y-%m-%d %H:%M:%S')
+    future_values_to_predict = pre_future_val(pred_start_date, 480)
     forecast = model.predict(future_values_to_predict)
 
     fig = model.plot(forecast)
