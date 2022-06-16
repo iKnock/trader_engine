@@ -55,7 +55,7 @@ def identify_signal_return_renko_macd(data_fr, ohlc_renko):
                 if ohlc_renko["bar_num"][i] <= -2 and ohlc_renko["macd"][i] < \
                         ohlc_renko["macd_sig"][i] and ohlc_renko["macd_slope"][i] < \
                         ohlc_renko["macd_sig_slope"][i]:
-                    tickers_signal = "Sell"#Close_sell
+                    tickers_signal = "Sell"  # Close_sell
                 elif ohlc_renko["macd"][i] < ohlc_renko["macd_sig"][i] and \
                         ohlc_renko["macd_slope"][i] < ohlc_renko["macd_sig_slope"][i]:
                     tickers_signal = ""
@@ -97,8 +97,8 @@ def main():
     now_str = dt.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     df = ld.filter_df_by_interval(df, const.since, now_str)
     renko_macd = run(df)
-    print(renko_macd)
+    return renko_macd
 
 
 if __name__ == '__main__':
-    main()
+    renk_macd = main()

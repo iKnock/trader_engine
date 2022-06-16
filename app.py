@@ -11,7 +11,7 @@ import transformer.indicators as indicator
 import numpy as np
 import pandas as pd
 import performance_evaluation.performace_kpi as kpi
-import strategy.signal as sgl
+import strategy.trading_signal as sgl
 import strategy.sma_cross_over as sma
 
 
