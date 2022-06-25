@@ -34,10 +34,8 @@ def breakout(data_f):
         elif tickers_signal == "Buy":
             if ohlc_dict["LOW"][i] < ohlc_dict["CLOSE"][i - 1] - ohlc_dict["ATR"][i - 1]:
                 tickers_signal = ""
-                df_signal.append(
-                    "Sell/Stop Loss/Stop long")  # selling price will be ohlc_dict["CLOSE"][i - 1] - ohlc_dict["ATR"][i - 1]
-                tickers_ret.append(
-                    ((ohlc_dict["CLOSE"][i - 1] - ohlc_dict["ATR"][i - 1]) / ohlc_dict["CLOSE"][i - 1]) - 1)
+                df_signal.append("Sell/Stop Loss/Stop long")  # selling price will be ohlc_dict["CLOSE"][i - 1] - ohlc_dict["ATR"][i - 1]
+                tickers_ret.append(((ohlc_dict["CLOSE"][i - 1] - ohlc_dict["ATR"][i - 1]) / ohlc_dict["CLOSE"][i - 1]) - 1)
             elif ohlc_dict["LOW"][i] <= ohlc_dict["roll_min_cp"][i] and \
                     ohlc_dict["VOLUME"][i] > 1.5 * ohlc_dict["roll_max_vol"][i - 1]:
                 tickers_signal = "Sell"  # trend reversal
@@ -51,8 +49,7 @@ def breakout(data_f):
             if ohlc_dict["HIGH"][i] > ohlc_dict["CLOSE"][i - 1] + ohlc_dict["ATR"][i - 1]:
                 tickers_signal = ""
                 df_signal.append("stop loss/stop shorting")
-                tickers_ret.append(
-                    (ohlc_dict["CLOSE"][i - 1] / (ohlc_dict["CLOSE"][i - 1] + ohlc_dict["ATR"][i - 1])) - 1)
+                tickers_ret.append((ohlc_dict["CLOSE"][i - 1] / (ohlc_dict["CLOSE"][i - 1] + ohlc_dict["ATR"][i - 1])) - 1)
             elif ohlc_dict["HIGH"][i] >= ohlc_dict["roll_max_cp"][i] and \
                     ohlc_dict["VOLUME"][i] > 1.5 * ohlc_dict["roll_max_vol"][i - 1]:
                 tickers_signal = "Buy"  # trend reversal

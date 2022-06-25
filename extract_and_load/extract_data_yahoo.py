@@ -43,3 +43,16 @@ def format_crypto_summary_df(summary_table):
     crypto_summary_df = crypto_summary_df[1:]  # take the data less the header row
     crypto_summary_df.columns = new_header  # set the header row as the df header
     return crypto_summary_df
+
+
+def get_yahoo_hourl_candle():
+    temp = yf.download("GBPJPY=X", period="60d", interval="15m")
+    tickers = ["GBP/JPY"]
+    yfinance_ohlcv = {}
+    for ticker in tickers:
+        yfinance_ohlcv[ticker] = read_candle_yahoo(ticker, '2y', '15m')
+    return yfinance_ohlcv
+
+
+if __name__ == '__main__':
+    get_yahoo_hourl_candle()
