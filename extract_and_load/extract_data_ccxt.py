@@ -49,3 +49,9 @@ def get_order_book(excnge, ticker):
 
 if __name__ == '__main__':
     read_latest_candles()
+
+    '''To read the binance order book'''
+    # exchange = ccxt_wrapper.init_exchange_market(const.exchange)
+    # btc_eur = get_order_book(exchange, const.symbol)
+    # bid = pd.DataFrame(btc_eur.get("bid_binance"))
+    # ask = pd.DataFrame(btc_eur.get("ask_binance"))
